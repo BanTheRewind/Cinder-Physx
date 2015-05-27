@@ -20,4 +20,5 @@ git submodule update -- init
   - Go to "BUILD" > "Batch Build..."
   - "Select All"
   - "Build"
+
 5) Open and run a sample project.
