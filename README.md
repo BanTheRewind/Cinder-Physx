@@ -1,7 +1,5 @@
 # Cinder-Physx
-Nvidia Physx SDK implementation for Cinder. 
-
-Read more about Physx here: https://developer.nvidia.com/physx-sdk
+Nvidia Physx SDK implementation for Cinder. Learn more about Physx here: https://developer.nvidia.com/physx-sdk
 
 ### SETUP
 
