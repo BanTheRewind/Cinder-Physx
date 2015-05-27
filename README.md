@@ -13,7 +13,7 @@ git clone https://github.com/BanTheRewind/Cinder-Physx.git
 3) Add the Physx submodule.
 ```
 cd Cinder-Physx
-git submodule update -- init
+git submodule update --init
 ```
 4) Build Physx with Visual Studio 2013 Community Edition or better.
   - Open "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/vc12win64/PhysX.sln"
