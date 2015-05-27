@@ -89,39 +89,39 @@ PxMat44 Physx::to( const mat4& m )
 		);
 }
 
-PxQuat Physx::to( const quat& m )
+PxQuat Physx::to( const quat& q )
 {
-
+	return PxQuat( q.x, q.y, q.z, q.w );
 }
 
 PxVec2 Physx::to( const vec2& v )
 {
-
+	return PxVec2( v.x, v.y );
 }
 
 PxVec3 Physx::to( const vec3& v )
 {
-
+	return PxVec3( v.x, v.y, v.z );
 }
 
 PxVec4 Physx::to( const vec4& v )
 {
-
+	return PxVec4( v.x, v.y, v.z, v.w );
 }
 
 PxTransform Physx::to( const quat& q, const vec3& v )
 {
-
+	return PxTransform( to( v ), to( q ) );
 }
 
 PxTransform Physx::to( const pair<quat, vec3>& p )
 {
-
+	return PxTransform( to( p.second ), to( p.first ) );
 }
 
 PxBounds3 Physx::to( const AxisAlignedBox& b )
 {
-
+	return PxBounds3( to( b.getMin() ), to( b.getMax() ) );
 }
 
 PxDefaultAllocator Physx::getAllocator()
