@@ -1,7 +1,7 @@
 # Cinder-Physx
 Nvidia Physx implementation for Cinder
 
-## SETUP
+### SETUP
 
 ##### 1. Register as a Nvidia developer to get access to the Physx source by following the instructions here:
    https://developer.nvidia.com/physx-source-github
