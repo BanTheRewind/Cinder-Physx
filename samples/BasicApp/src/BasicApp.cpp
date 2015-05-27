@@ -12,6 +12,7 @@ public:
 
 	void				draw() override;
 	void				keyDown( ci::app::KeyEvent event ) override;
+	void				resize() override;
 	void				update() override;
 private:
 	ci::CameraPersp		mCamera;
@@ -34,12 +35,16 @@ BasicApp::BasicApp()
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 5.0f ), vec3( 0.0f ) );
 	mCamUi = CameraUi( &mCamera, getWindow() );
 
+	resize();
+
 	gl::enableVerticalSync();
 }
 
 void BasicApp::draw()
 {
 	gl::clear();
+	const gl::ScopedMatrices scopedMatrices;
+	gl::setMatrices( mCamera );
 }
 
 void BasicApp::keyDown( ci::app::KeyEvent event )
@@ -52,15 +57,20 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 		quit();
 		break;
 	case KeyEvent::KEY_SPACE:
+		// TO DO add actor
 		break;
 	}
 }
 
+void BasicApp::resize()
+{
+	mCamera.setAspectRatio( getWindowAspectRatio() );
+}
+
 void BasicApp::update()
 {
-	double e = getElapsedSeconds();
+	double e	= getElapsedSeconds();
 	float d		= (float)( e - mElapsedSeconds );
-
 
 	mElapsedSeconds = e;
 }
@@ -69,5 +79,5 @@ CINDER_APP( BasicApp, RendererGl, []( App::Settings* settings )
 {
 	settings->disableFrameRate();
 	settings->setWindowSize( 1280, 720 );
-}; )
+} )
  
