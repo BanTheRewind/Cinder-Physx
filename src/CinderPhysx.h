@@ -16,26 +16,22 @@ public:
 	static PhysxRef							create();
 	~Physx();
 
-	static uint32_t							from( physx::PxU32 v );
-	static float							from( physx::PxReal v );
 	static ci::mat3							from( const physx::PxMat33& m );
 	static ci::mat4							from( const physx::PxMat44& m );
-	static ci::quat							from( const physx::PxQuat& m );
+	static ci::quat							from( const physx::PxQuat& q );
 	static ci::vec2							from( const physx::PxVec2& v );
 	static ci::vec3							from( const physx::PxVec3& v );
 	static ci::vec4							from( const physx::PxVec4& v );
 	static std::pair<ci::quat, ci::vec3>	from( const physx::PxTransform& t );
 	static ci::AxisAlignedBox				from( const physx::PxBounds3& b );
 
-	static physx::PxU32						to( uint32_t v );
-	static physx::PxReal					to( float v );
 	static physx::PxMat33					to( const ci::mat3& m );
 	static physx::PxMat44					to( const ci::mat4& m );
 	static physx::PxQuat					to( const ci::quat& m );
 	static physx::PxVec2					to( const ci::vec2& v );
 	static physx::PxVec3					to( const ci::vec3& v );
 	static physx::PxVec4					to( const ci::vec4& v );
-	static physx::PxTransform				to( const ci::quat& m, const ci::vec3& v );
+	static physx::PxTransform				to( const ci::quat& q, const ci::vec3& v );
 	static physx::PxTransform				to( const std::pair<ci::quat, ci::vec3>& p );
 	static physx::PxBounds3					to( const ci::AxisAlignedBox& b );
 

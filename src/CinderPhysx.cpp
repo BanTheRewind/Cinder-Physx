@@ -21,75 +21,72 @@ Physx::~Physx()
 {
 }
 
-uint32_t Physx::from( PxU32 v )
-{
-
-}
-
-float Physx::from( PxReal v )
-{
-
-}
-
 mat3 Physx::from( const PxMat33& m )
 {
-
+	return mat3(
+		m.column0.x, m.column0.y, m.column0.z, 
+		m.column1.x, m.column1.y, m.column1.z, 
+		m.column2.x, m.column2.y, m.column2.z
+		);
 }
 
 mat4 Physx::from( const PxMat44& m )
 {
-
+	return mat4(
+		m.column0.x, m.column0.y, m.column0.z, m.column0.w, 
+		m.column1.x, m.column1.y, m.column1.z, m.column1.w,
+		m.column2.x, m.column2.y, m.column2.z, m.column2.w,
+		m.column3.x, m.column3.y, m.column3.z, m.column3.w
+		);
 }
 
-quat Physx::from( const PxQuat& m )
+quat Physx::from( const PxQuat& q )
 {
-
+	return quat( q.w, q.x, q.y, q.z );
 }
 
 vec2 Physx::from( const PxVec2& v )
 {
-
+	return vec2( v.x, v.y );
 }
 
 vec3 Physx::from( const PxVec3& v )
 {
-
+	return vec3( v.x, v.y, v.z );
 }
 
 vec4 Physx::from( const PxVec4& v )
 {
-
+	return vec4( v.x, v.y, v.z, v.w );
 }
 
 pair<quat, vec3> Physx::from( const PxTransform& t )
 {
-
+	return make_pair( from( t.q ), from( t.p ) );
 }
 
 AxisAlignedBox Physx::from( const PxBounds3& b )
 {
-
-}
-
-
-PxU32 Physx::to( uint32_t v )
-{
-
-}
-
-PxReal Physx::to( float v )
-{
-
+	return AxisAlignedBox( from( b.minimum ), from( b.maximum ) );
 }
 
 PxMat33 Physx::to( const mat3& m )
 {
-
+	return PxMat33( 
+		to( vec3( m[ 0 ] ) ), 
+		to( vec3( m[ 1 ] ) ), 
+		to( vec3( m[ 2 ] ) ) 
+		);
 }
 
 PxMat44 Physx::to( const mat4& m )
 {
-
+	return PxMat44(
+		to( vec4( m[ 0 ] ) ),
+		to( vec4( m[ 1 ] ) ),
+		to( vec4( m[ 2 ] ) ), 
+		to( vec4( m[ 3 ] ) )
+		);
 }
 
 PxQuat Physx::to( const quat& m )
@@ -112,7 +109,7 @@ PxVec4 Physx::to( const vec4& v )
 
 }
 
-PxTransform Physx::to( const quat& m, const vec3& v )
+PxTransform Physx::to( const quat& q, const vec3& v )
 {
 
 }
