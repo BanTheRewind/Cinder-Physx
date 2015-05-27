@@ -5,20 +5,26 @@
 
 #include "CinderPhysx.h"
 
+#include "PxRigidDynamic.h"
+#include "PxShape.h"
+
 class BasicApp : public ci::app::App 
 {
 public:
 	BasicApp();
 
-	void				draw() override;
-	void				keyDown( ci::app::KeyEvent event ) override;
-	void				resize() override;
-	void				update() override;
+	void								draw() override;
+	void								keyDown( ci::app::KeyEvent event ) override;
+	void								resize() override;
+	void								update() override;
 private:
-	ci::CameraPersp		mCamera;
-	ci::CameraUi		mCamUi;
+	ci::CameraPersp						mCamera;
+	ci::CameraUi						mCamUi;
 
-	double				mElapsedSeconds;
+	double								mElapsedSeconds;
+
+	std::vector<physx::PxRigidActor*>	mActors;
+	std::vector<physx::PxActor*>		mDeletedActors;
 };
 
 using namespace ci;
@@ -31,9 +37,10 @@ using namespace std;
 BasicApp::BasicApp()
 {
 	mElapsedSeconds	= 0.0;
-	mCamera = CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
+
+	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 5.0f ), vec3( 0.0f ) );
-	mCamUi = CameraUi( &mCamera, getWindow() );
+	mCamUi	= CameraUi( &mCamera, getWindow() );
 
 	resize();
 
