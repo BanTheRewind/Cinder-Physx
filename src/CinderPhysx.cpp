@@ -4,6 +4,11 @@ using namespace ci;
 using namespace physx;
 using namespace std;
 
+PhysxRef Physx::create()
+{
+	return PhysxRef( new Physx() );
+}
+
 Physx::Physx()
 : mBufferedActiveTransforms( nullptr ), mCooking( nullptr ), 
 mCpuDispatcher( nullptr ), mCudaContextManager( nullptr ), mFoundation( nullptr ), 
@@ -122,68 +127,58 @@ PxBounds3 Physx::to( const AxisAlignedBox& b )
 
 }
 
-
 PxDefaultAllocator Physx::getAllocator()
 {
-	return get()->mAllocator;
+	return mAllocator;
 }
 
 PxActiveTransform* Physx::getBufferedActiveTransforms()
 {
-	return get()->mBufferedActiveTransforms;
+	return mBufferedActiveTransforms;
 }
 
 PxCooking* Physx::getCooking()
 {
-	return get()->mCooking;
+	return mCooking;
 }
 
 PxDefaultCpuDispatcher* Physx::getCpuDispatcher()
 {
-	return get()->mCpuDispatcher;
+	return mCpuDispatcher;
 }
 
 PxCudaContextManager* Physx::getCudaContextManager()
 {
-	return get()->mCudaContextManager;
+	return mCudaContextManager;
 }
 
 PxFoundation* Physx::getFoundation()
 {
-	return get()->mFoundation;
+	return mFoundation;
 }
 
 PxMaterial* Physx::getMaterial()
 {
-	return get()->mMaterial;
+	return mMaterial;
 }
 
 PxPhysics* Physx::getPhysics()
 {
-	return get()->mPhysics;
+	return mPhysics;
 }
 
 PxProfileZoneManager* Physx::getProfileZoneManager()
 {
-	return get()->mProfileZoneManager;
+	return mProfileZoneManager;
 }
 
 PxScene* Physx::getScene()
 {
-	return get()->mScene;
+	return mScene;
 }
 
 PxErrorCallback& Physx::getErrorCallback()
 {
 	static PxDefaultErrorCallback defaultErrorCallback;
 	return defaultErrorCallback;
-}
-
-shared_ptr<Physx> Physx::get()
-{
-	static shared_ptr<Physx> instance;
-	if ( !instance ) {
-		instance = shared_ptr<Physx>( new Physx() );
-	}
-	return instance;
 }

@@ -8,9 +8,12 @@
 #include "extensions/PxExtensionsAPI.h"
 #include <memory>
 
+typedef std::shared_ptr<class Physx>		PhysxRef;
+
 class Physx
 {
 public:
+	static PhysxRef							create();
 	~Physx();
 
 	static uint32_t							from( physx::PxU32 v );
@@ -36,18 +39,17 @@ public:
 	static physx::PxTransform				to( const std::pair<ci::quat, ci::vec3>& p );
 	static physx::PxBounds3					to( const ci::AxisAlignedBox& b );
 
-	static physx::PxDefaultAllocator		getAllocator();
-	static physx::PxActiveTransform*		getBufferedActiveTransforms();
-	static physx::PxCooking*				getCooking();
-	static physx::PxDefaultCpuDispatcher*	getCpuDispatcher();
-	static physx::PxCudaContextManager*		getCudaContextManager();
-	static physx::PxFoundation*				getFoundation();
-	static physx::PxMaterial*				getMaterial();
-	static physx::PxPhysics*				getPhysics();
-	static physx::PxProfileZoneManager*		getProfileZoneManager();
-	static physx::PxScene*					getScene();
+	physx::PxDefaultAllocator				getAllocator();
+	physx::PxActiveTransform*				getBufferedActiveTransforms();
+	physx::PxCooking*						getCooking();
+	physx::PxDefaultCpuDispatcher*			getCpuDispatcher();
+	physx::PxCudaContextManager*			getCudaContextManager();
+	physx::PxFoundation*					getFoundation();
+	physx::PxMaterial*						getMaterial();
+	physx::PxPhysics*						getPhysics();
+	physx::PxProfileZoneManager*			getProfileZoneManager();
+	physx::PxScene*							getScene();
 protected:
-	static std::shared_ptr<Physx>			get();
 	Physx();
 
 	physx::PxErrorCallback&					getErrorCallback();
