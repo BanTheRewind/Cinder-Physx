@@ -73,6 +73,7 @@ BasicApp::BasicApp()
 	gl::GlslProgRef stockColor	= gl::getStockShader(gl::ShaderDef().color() );
 	gl::VboMeshRef wirePlane	= gl::VboMesh::create( geom::WirePlane()
 													   .axes( vec3( 0.0f, 1.0f, 0.0f ), vec3( 0.0f, 0.0f, 1.0f ) )
+													   .size( vec2( 100.0f ) )
 													   .subdivisions( ivec2( 32 ) ) );
 	gl::VboMeshRef wireSphere	= gl::VboMesh::create( geom::WireSphere()
 													   .subdivisionsAxis( 16 )
@@ -95,7 +96,6 @@ void BasicApp::draw()
 	{
 		const gl::ScopedModelMatrix scopedModelMatrix;
 		gl::multModelMatrix( Physx::from( mActorPlane->getGlobalPose() ) );
-		gl::scale( vec3( 100.0f ) );
 		mBatchStockColorWirePlane->draw();
 	}
 
