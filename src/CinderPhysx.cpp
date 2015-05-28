@@ -108,6 +108,26 @@ mat4 Physx::from( const PxMat44& m )
 		);
 }
 
+mat4 Physx::from( const PxTransform& t )
+{
+	return from( t.q, t.p );
+}
+
+mat4 Physx::from( const PxQuat& q, const PxVec3& v )
+{
+	return from( PxMat33( q ), v );
+}
+
+mat4 Physx::from( const PxMat33& m, const PxVec3& v )
+{
+	return mat4(
+		m.column0.x, m.column0.y, m.column0.z, 0.0f, 
+		m.column1.x, m.column1.y, m.column1.z, 0.0f, 
+		m.column2.x, m.column2.y, m.column2.z, 0.0f, 
+		v.x, v.y, v.z, 1.0f
+		);
+}
+
 quat Physx::from( const PxQuat& q )
 {
 	return quat( q.w, q.x, q.y, q.z );
@@ -126,11 +146,6 @@ vec3 Physx::from( const PxVec3& v )
 vec4 Physx::from( const PxVec4& v )
 {
 	return vec4( v.x, v.y, v.z, v.w );
-}
-
-pair<quat, vec3> Physx::from( const PxTransform& t )
-{
-	return make_pair( from( t.q ), from( t.p ) );
 }
 
 AxisAlignedBox Physx::from( const PxBounds3& b )
@@ -182,11 +197,6 @@ PxTransform Physx::to( const quat& q, const vec3& v )
 	return PxTransform( to( v ), to( q ) );
 }
 
-PxTransform Physx::to( const pair<quat, vec3>& p )
-{
-	return PxTransform( to( p.second ), to( p.first ) );
-}
-
 PxBounds3 Physx::to( const AxisAlignedBox& b )
 {
 	return PxBounds3( to( b.getMin() ), to( b.getMax() ) );
@@ -233,6 +243,7 @@ uint32_t Physx::addActor( PxActor* actor, PxScene* scene )
 {
 	uint32_t id = mActors.empty() ? 0 : mActors.rbegin()->first + 1;
 	mActors[ id ] = actor;
+	scene->lockWrite();
 	scene->addActor( *actor );
 	return id;
 }
@@ -272,6 +283,7 @@ PxActor* Physx::getActor( uint32_t id ) const
 	}
 	return nullptr;
 }
+
 const map<uint32_t, PxActor*>& Physx::getActors() const
 {
 	return mActors;

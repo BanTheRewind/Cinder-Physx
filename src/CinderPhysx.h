@@ -21,11 +21,13 @@ public:
 
 	static ci::mat3									from( const physx::PxMat33& m );
 	static ci::mat4									from( const physx::PxMat44& m );
+	static ci::mat4									from( const physx::PxTransform& t );
+	static ci::mat4									from( const physx::PxQuat& q, const physx::PxVec3& v );
+	static ci::mat4									from( const physx::PxMat33& m, const physx::PxVec3& v );
 	static ci::quat									from( const physx::PxQuat& q );
 	static ci::vec2									from( const physx::PxVec2& v );
 	static ci::vec3									from( const physx::PxVec3& v );
 	static ci::vec4									from( const physx::PxVec4& v );
-	static std::pair<ci::quat, ci::vec3>			from( const physx::PxTransform& t );
 	static ci::AxisAlignedBox						from( const physx::PxBounds3& b );
 
 	static physx::PxMat33							to( const ci::mat3& m );
@@ -35,7 +37,6 @@ public:
 	static physx::PxVec3							to( const ci::vec3& v );
 	static physx::PxVec4							to( const ci::vec4& v );
 	static physx::PxTransform						to( const ci::quat& q, const ci::vec3& v );
-	static physx::PxTransform						to( const std::pair<ci::quat, ci::vec3>& p );
 	static physx::PxBounds3							to( const ci::AxisAlignedBox& b );
 
 	physx::PxDefaultAllocator						getAllocator() const;

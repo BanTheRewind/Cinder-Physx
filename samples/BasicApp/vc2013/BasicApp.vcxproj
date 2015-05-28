@@ -66,7 +66,7 @@
       <AdditionalIncludeDirectories>"..\..\..\..\..\include";..\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;OpenGL32.lib;PhysX3DEBUG_x64.lib;PhysXProfileSDKDEBUG.lib;PhysX3CommonDEBUG_x64.lib;PhysX3CookingDEBUG_x64.lib;PhysX3ExtensionsDEBUG.lib;PhysX3GpuDEBUG_x64.lib;PvdRuntimeDEBUG.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;OpenGL32.lib;PhysX3DEBUG_x64.lib;PhysXProfileSDKDEBUG.lib;PhysX3CommonDEBUG_x64.lib;PhysX3CookingDEBUG_x64.lib;PhysX3ExtensionsDEBUG.lib;PhysX3GpuDEBUG_x64.lib;PvdRuntimeDEBUG.lib;PxTaskDEBUG.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\..\lib\msw\$(PlatformTarget);..\..\..\PhysX-3.3\PhysXSDK\Lib\vc12win64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -100,7 +100,7 @@ xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3GpuDEBUG_x64.dll" "$(Proj
       <AdditionalIncludeDirectories>"..\..\..\..\..\include";..\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder-$(PlatformToolset).lib;OpenGL32.lib;PhysX3_x64.lib;PhysXProfileSDK.lib;PhysX3Cooking_x64.lib;PhysX3Common_x64.lib;PhysX3Extensions.lib;PhysX3Gpu_x64.lib;PvdRuntime.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cinder-$(PlatformToolset).lib;OpenGL32.lib;PhysX3_x64.lib;PhysXProfileSDK.lib;PhysX3Cooking_x64.lib;PhysX3Common_x64.lib;PhysX3Extensions.lib;PhysX3Gpu_x64.lib;PvdRuntime.lib;PxTask.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\..\..\lib\msw\$(PlatformTarget);..\..\..\PhysX-3.3\PhysXSDK\Lib\vc12win64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>

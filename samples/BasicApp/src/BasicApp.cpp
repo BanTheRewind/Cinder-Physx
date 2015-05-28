@@ -22,8 +22,8 @@ private:
 	ci::CameraUi			mCamUi;
 
 	ci::gl::BatchRef		mBatchStockColorWirePlane;
-	physx::PxRigidStatic*	mPlane;
 
+	physx::PxRigidStatic*	mActorPlane;
 	PhysxRef				mPhysx;
 };
 
@@ -48,14 +48,18 @@ BasicApp::BasicApp()
 	mPhysx->createScene();
 
 	// Create a plane
-	mPlane = PxCreatePlane(
+	mActorPlane = PxCreatePlane(
 		*mPhysx->getPhysics(),
-		PxPlane( Physx::to( vec3( 0.0f, 1.0f, 0.0f ) ), 0 ),
+		PxPlane( Physx::to( vec3( 0.0f, 0.0f, 1.0f ) ), 0.0f ),
 		*mPhysx->getPhysics()->createMaterial( 0.5f, 0.5f, 0.1f )
 		);
 
 	// Add the plane to the scene.
-	mPhysx->addActor( mPlane, mPhysx->getScene() );
+	mPhysx->addActor( mActorPlane, mPhysx->getScene() );
+
+	gl::GlslProgRef stockColor	= gl::getStockShader(gl::ShaderDef().color() );
+	gl::VboMeshRef wirePlane	= gl::VboMesh::create( geom::WirePlane().subdivisions( ivec2( 32, 32 ) ) );
+	mBatchStockColorWirePlane	= gl::Batch::create( wirePlane, stockColor );
 
 	resize();
 
@@ -67,6 +71,12 @@ void BasicApp::draw()
 	gl::clear();
 	const gl::ScopedMatrices scopedMatrices;
 	gl::setMatrices( mCamera );
+
+	{
+		const gl::ScopedModelMatrix scopedModelMatrix;
+		gl::multModelMatrix( Physx::from( mActorPlane->getGlobalPose() ) );
+		mBatchStockColorWirePlane->draw();
+	}
 }
 
 void BasicApp::keyDown( ci::app::KeyEvent event )
