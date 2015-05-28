@@ -8,6 +8,7 @@
 #include "extensions/PxExtensionsAPI.h"
 #include <map>
 #include <memory>
+#include <vector>
 
 typedef std::shared_ptr<class Physx>		PhysxRef;
 
@@ -54,6 +55,7 @@ public:
 	uint32_t										addActor( physx::PxActor* actor, uint32_t sceneId );
 	uint32_t										addActor( physx::PxActor* actor, physx::PxScene* scene );
 	void											eraseActor( uint32_t id );
+	void											eraseActor( physx::PxActor& actor );
 	void											eraseActor( physx::PxActor* actor );
 	physx::PxActor*									getActor( uint32_t id = 0 ) const;
 	const std::map<uint32_t, physx::PxActor*>&		getActors() const;
@@ -75,6 +77,7 @@ protected:
 #if PX_SUPPORT_GPU_PHYSX
 	physx::PxCudaContextManager*					mCudaContextManager;
 #endif
+	std::vector<uint32_t>							mDeletedActors;
 	physx::PxFoundation*							mFoundation;
 	physx::PxPhysics*								mPhysics;
 	std::map<uint32_t, physx::PxScene*>				mScenes;

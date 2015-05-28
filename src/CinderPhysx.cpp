@@ -237,6 +237,18 @@ PxPhysics* Physx::getPhysics() const
 
 void Physx::update( float deltaInSeconds )
 {
+	for ( uint32_t id : mDeletedActors ) {
+		map<uint32_t, PxActor*>::iterator iter = mActors.find( id );
+		if ( iter != mActors.end() ) {
+			if ( iter->second != nullptr ) {
+				iter->second->release();
+				iter->second = nullptr;
+			}
+			mActors.erase( iter );
+		}
+	}
+	mDeletedActors.clear();
+
 	for ( auto& iter : mScenes ) {
 		iter.second->simulate( deltaInSeconds );
 		while ( !iter.second->fetchResults( true ) ) {
@@ -246,44 +258,34 @@ void Physx::update( float deltaInSeconds )
 
 uint32_t Physx::addActor( PxActor* actor, uint32_t sceneId )
 {
-	return addActor(actor, getScene( sceneId ) );
+	return addActor( actor, getScene( sceneId ) );
 }
 
 uint32_t Physx::addActor( PxActor* actor, PxScene* scene )
 {
-	uint32_t id = mActors.empty() ? 0 : mActors.rbegin()->first + 1;
-	mActors[ id ] = actor;
-	scene->lockWrite();
+	uint32_t id			= mActors.empty() ? 0 : mActors.rbegin()->first + 1;
+	uintptr_t userData	= id;
+	actor->userData		= (void*)userData;
+	mActors[ id ]		= actor;
 	scene->addActor( *actor );
 	return id;
 }
 
 void Physx::eraseActor( uint32_t id )
 {
-	map<uint32_t, PxActor*>::iterator iter = mActors.find( id );
-	if ( iter != mActors.end() ) {
-		if ( iter->second != nullptr ) {
-			iter->second->release();
-			iter->second = nullptr;
-		}
-		mActors.erase( iter );
-	}
+	mDeletedActors.push_back( id );
+}
+
+void Physx::eraseActor( PxActor& actor )
+{
+	uintptr_t id = (uintptr_t)actor.userData;
+	eraseActor( (uint32_t)id );
 }
 
 void Physx::eraseActor( PxActor* actor )
 {
-	for ( map<uint32_t, PxActor*>::iterator iter = mActors.begin(); iter != mActors.end(); ) {
-		if ( iter->second == actor ) {
-			if ( actor != nullptr ) {
-				actor->release();
-				actor = nullptr;
-			}
-			iter = mActors.erase( iter );
-			break;
-		} else {
-			++iter;
-		}
-	}
+	uintptr_t id = (uintptr_t)actor->userData;
+	eraseActor( (uint32_t)id );
 }
 
 PxActor* Physx::getActor( uint32_t id ) const
@@ -307,7 +309,7 @@ uint32_t Physx::createScene()
 	desc.broadPhaseType = PxBroadPhaseType::eMBP;
 	desc.cpuDispatcher	= mCpuDispatcher;
 	desc.filterShader	= PxDefaultSimulationFilterShader;
-	desc.flags			|= PxSceneFlag::eENABLE_ACTIVETRANSFORMS | PxSceneFlag::eREQUIRE_RW_LOCK;
+	desc.flags			|= PxSceneFlag::eENABLE_ACTIVETRANSFORMS;
 	desc.gravity		= PxVec3( 0.0f, -9.81f, 0.0f );
 	if ( mCudaContextManager != nullptr && mCudaContextManager->contextIsValid() ) {
 		desc.gpuDispatcher = mCudaContextManager->getGpuDispatcher();
@@ -321,7 +323,6 @@ uint32_t Physx::createScene( const PxSceneDesc& desc )
 	PxScene* scene	= mPhysics->createScene( desc );
 	PxBroadPhaseRegion broadPhaseRegion;
 	broadPhaseRegion.bounds = to( AxisAlignedBox( vec3( -100.0f ), vec3( 100.0f ) ) );
-	scene->lockWrite();
 	scene->addBroadPhaseRegion( broadPhaseRegion );
 	CI_ASSERT( scene != nullptr );
 	uint32_t id		= mScenes.empty() ? 0 : mScenes.rbegin()->first + 1;
