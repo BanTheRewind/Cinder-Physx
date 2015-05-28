@@ -23,7 +23,7 @@ private:
 
 	ci::gl::BatchRef		mBatchStockColorCapsule;
 	ci::gl::BatchRef		mBatchStockColorCube;
-	ci::gl::BatchRef		mBatchStockColorWirePlane;
+	ci::gl::BatchRef		mBatchStockColorPlane;
 	ci::gl::BatchRef		mBatchStockColorSphere;
 
 	physx::PxMaterial*		mMaterial;
@@ -68,12 +68,12 @@ BasicApp::BasicApp()
 		), mPhysx->getScene() );
 
 	// Create shader and geometry batches
-	gl::GlslProgRef stockColor	= gl::getStockShader(gl::ShaderDef().color() );
+	gl::GlslProgRef stockColor	= gl::getStockShader( gl::ShaderDef().color() );
 	gl::VboMeshRef capsule		= gl::VboMesh::create( geom::Capsule()
 													   .subdivisionsAxis( 16 )
 													   .subdivisionsHeight( 16 ) );
 	gl::VboMeshRef cube			= gl::VboMesh::create( geom::Cube().colors() );
-	gl::VboMeshRef wirePlane	= gl::VboMesh::create( geom::WirePlane()
+	gl::VboMeshRef plane		= gl::VboMesh::create( geom::Plane()
 													   .axes( vec3( 0.0f, 1.0f, 0.0f ), vec3( 0.0f, 0.0f, 1.0f ) )
 													   .size( vec2( 100.0f ) )
 													   .subdivisions( ivec2( 32 ) ) );
@@ -82,7 +82,7 @@ BasicApp::BasicApp()
 													   .subdivisions( 32 ) );
 	mBatchStockColorCapsule		= gl::Batch::create( capsule,	stockColor );
 	mBatchStockColorCube		= gl::Batch::create( cube,		stockColor );
-	mBatchStockColorWirePlane	= gl::Batch::create( wirePlane,	stockColor );
+	mBatchStockColorPlane		= gl::Batch::create( plane,		stockColor );
 	mBatchStockColorSphere		= gl::Batch::create( sphere,	stockColor );
 
 	resize();
@@ -90,6 +90,7 @@ BasicApp::BasicApp()
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::enableVerticalSync();
+	gl::polygonMode( GL_FRONT_AND_BACK, GL_LINE );
 }
 
 void BasicApp::draw()
@@ -117,7 +118,7 @@ void BasicApp::draw()
 				mBatchStockColorCapsule->draw();
 				break;
 			case PxGeometryType::ePLANE:
-				mBatchStockColorWirePlane->draw();
+				mBatchStockColorPlane->draw();
 				break;
 			case PxGeometryType::eSPHERE:
 				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
