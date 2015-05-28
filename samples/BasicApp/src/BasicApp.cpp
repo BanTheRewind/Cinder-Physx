@@ -13,23 +13,23 @@ class BasicApp : public ci::app::App, public physx::PxBroadPhaseCallback
 public:
 	BasicApp();
 
-	void					draw() override;
-	void					keyDown( ci::app::KeyEvent event ) override;
-	void					resize() override;
-	void					update() override;
+	void				draw() override;
+	void				keyDown( ci::app::KeyEvent event ) override;
+	void				resize() override;
+	void				update() override;
 private:
-	ci::CameraPersp			mCamera;
-	ci::CameraUi			mCamUi;
+	ci::CameraPersp		mCamera;
+	ci::CameraUi		mCamUi;
 
-	ci::gl::BatchRef		mBatchStockColorCapsule;
-	ci::gl::BatchRef		mBatchStockColorCube;
-	ci::gl::BatchRef		mBatchStockColorPlane;
-	ci::gl::BatchRef		mBatchStockColorSphere;
+	ci::gl::BatchRef	mBatchStockColorCapsule;
+	ci::gl::BatchRef	mBatchStockColorCube;
+	ci::gl::BatchRef	mBatchStockColorPlane;
+	ci::gl::BatchRef	mBatchStockColorSphere;
 
-	physx::PxMaterial*		mMaterial;
-	PhysxRef				mPhysx;
-	virtual void			onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor );
-	virtual void			onObjectOutOfBounds( physx::PxAggregate& aggregate );
+	physx::PxMaterial*	mMaterial;
+	PhysxRef			mPhysx;
+	virtual void		onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor );
+	virtual void		onObjectOutOfBounds( physx::PxAggregate& aggregate );
 };
 
 using namespace ci;
@@ -100,30 +100,41 @@ void BasicApp::draw()
 	gl::setMatrices( mCamera );
 
 	for ( const auto& iter : mPhysx->getActors() ) {
-		const gl::ScopedModelMatrix scopedModelMatrix;
-		PxRigidActor* actor = static_cast<PxRigidActor*>( iter.second );
-		gl::multModelMatrix( Physx::from( actor->getGlobalPose() ) );
-		
-		PxShape* shape = nullptr;
-		actor->getShapes( &shape, sizeof( PxShape ) * actor->getNbShapes() );
 
-		for ( uint32_t i = 0; i < actor->getNbShapes(); ++i, ++shape ) {
-			switch ( shape->getGeometryType() ) {
-			case PxGeometryType::eBOX:
-				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
-				mBatchStockColorCube->draw();
-				break;
-			case PxGeometryType::eCAPSULE:
-				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
-				mBatchStockColorCapsule->draw();
-				break;
-			case PxGeometryType::ePLANE:
-				mBatchStockColorPlane->draw();
-				break;
-			case PxGeometryType::eSPHERE:
-				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
-				mBatchStockColorSphere->draw();
-				break;
+		// Cast to rigid actor.
+		if ( iter.second->getType() == PxActorType::eRIGID_DYNAMIC || 
+			 iter.second->getType() == PxActorType::eRIGID_STATIC ) {
+			PxRigidActor* actor = static_cast<PxRigidActor*>( iter.second );
+
+			// Apply actor's transofrm
+			const gl::ScopedModelMatrix scopedModelMatrix;
+			gl::multModelMatrix( Physx::from( actor->getGlobalPose() ) );
+		
+			// Get the actor's shapes
+			PxShape* shape = nullptr;
+			actor->getShapes( &shape, sizeof( PxShape ) * actor->getNbShapes() );
+			for ( uint32_t i = 0; i < actor->getNbShapes(); ++i, ++shape ) {
+
+				// Scale non-plane shapes to their bounds (plane is infinite)
+				if ( shape->getGeometryType() != PxGeometryType::ePLANE ) {
+					gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
+				}
+
+				// Use the appropriate batch to draw the geometry type.
+				switch ( shape->getGeometryType() ) {
+				case PxGeometryType::eBOX:
+					mBatchStockColorCube->draw();
+					break;
+				case PxGeometryType::eCAPSULE:
+					mBatchStockColorCapsule->draw();
+					break;
+				case PxGeometryType::ePLANE:
+					mBatchStockColorPlane->draw();
+					break;
+				case PxGeometryType::eSPHERE:
+					mBatchStockColorSphere->draw();
+					break;
+				}
 			}
 		}
 	}
@@ -134,10 +145,12 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 	switch ( event.getCode() ) {
 	case KeyEvent::KEY_SPACE:
 		{
+			// Choose and random position and size
 			vec3 p( randVec3() * 5.0f );
 			p.y		= glm::abs( p.y );
 			float r = randFloat( 0.01f, 1.0f );
 
+			// Create a randomly shaped actor
 			PxRigidDynamic* actor = nullptr;
 			switch ( randInt( 0, 3 ) ) {
 			case 0:
@@ -166,6 +179,7 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 				break;
 			}
 
+			// Apply some motion and add it to the scene
 			actor->setLinearVelocity( Physx::to( randVec3() ) );
 			mPhysx->addActor( actor, mPhysx->getScene() );
 		}
