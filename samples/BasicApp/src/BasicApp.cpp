@@ -42,7 +42,7 @@ using namespace std;
 
 BasicApp::BasicApp()
 {
-	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 100.0f );
+	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
 	mCamera.lookAt( vec3( 0.0f, 3.0f, 20.0f ), vec3( 0.0f, 2.0f, 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
 
@@ -55,7 +55,8 @@ BasicApp::BasicApp()
 	// Create a scene. Multiples scenes are allowed.
 	mPhysx->createScene();
 
-	// Connects onObjectOutOfBounds to scene.
+	// Connects onObjectOutOfBounds to scene. This lets us manage 
+	// objects that have gone out of bounds.
 	mPhysx->getScene()->setBroadPhaseCallback( this );
 
 	// Create a plane
@@ -94,7 +95,7 @@ void BasicApp::draw()
 	{
 		const gl::ScopedModelMatrix scopedModelMatrix;
 		gl::multModelMatrix( Physx::from( mActorPlane->getGlobalPose() ) );
-		gl::scale( vec3( mCamera.getFarClip() ) );
+		gl::scale( vec3( 100.0f ) );
 		mBatchStockColorWirePlane->draw();
 	}
 
