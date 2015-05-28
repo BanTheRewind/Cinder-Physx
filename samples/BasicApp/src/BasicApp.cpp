@@ -21,10 +21,10 @@ private:
 	ci::CameraPersp			mCamera;
 	ci::CameraUi			mCamUi;
 
+	ci::gl::BatchRef		mBatchStockColorWireCube;
 	ci::gl::BatchRef		mBatchStockColorWirePlane;
 	ci::gl::BatchRef		mBatchStockColorWireSphere;
 
-	physx::PxRigidStatic*	mActorPlane;
 	physx::PxMaterial*		mMaterial;
 	PhysxRef				mPhysx;
 	virtual void			onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor );
@@ -59,18 +59,16 @@ BasicApp::BasicApp()
 	// objects that have gone out of bounds.
 	mPhysx->getScene()->setBroadPhaseCallback( this );
 
-	// Create a plane
-	mActorPlane = PxCreatePlane(
+	// Add the plane to the scene.
+	mPhysx->addActor( PxCreatePlane(
 		*mPhysx->getPhysics(),
 		PxPlane( Physx::to( vec3( 0.0f, 1.0f, 0.0f ) ), 0.0f ),
 		*mMaterial
-		);
-
-	// Add the plane to the scene.
-	mPhysx->addActor( mActorPlane, mPhysx->getScene() );
+		), mPhysx->getScene() );
 
 	// Create shader and geometry batches
 	gl::GlslProgRef stockColor	= gl::getStockShader(gl::ShaderDef().color() );
+	gl::VboMeshRef wireCube		= gl::VboMesh::create( geom::WireCube() );
 	gl::VboMeshRef wirePlane	= gl::VboMesh::create( geom::WirePlane()
 													   .axes( vec3( 0.0f, 1.0f, 0.0f ), vec3( 0.0f, 0.0f, 1.0f ) )
 													   .size( vec2( 100.0f ) )
@@ -79,6 +77,7 @@ BasicApp::BasicApp()
 													   .subdivisionsAxis( 16 )
 													   .subdivisionsCircle( 16 )
 													   .subdivisionsHeight( 16 ) );
+	mBatchStockColorWireCube	= gl::Batch::create( wireCube,		stockColor );
 	mBatchStockColorWirePlane	= gl::Batch::create( wirePlane,		stockColor );
 	mBatchStockColorWireSphere	= gl::Batch::create( wireSphere,	stockColor );
 
@@ -93,19 +92,28 @@ void BasicApp::draw()
 	const gl::ScopedMatrices scopedMatrices;
 	gl::setMatrices( mCamera );
 
-	{
-		const gl::ScopedModelMatrix scopedModelMatrix;
-		gl::multModelMatrix( Physx::from( mActorPlane->getGlobalPose() ) );
-		mBatchStockColorWirePlane->draw();
-	}
-
 	for ( const auto& iter : mPhysx->getActors() ) {
-		if ( iter.second != mActorPlane ) {
-			const gl::ScopedModelMatrix scopedModelMatrix;
-			PxRigidDynamic* actor = static_cast<PxRigidDynamic*>( iter.second );
-			gl::multModelMatrix( Physx::from( actor->getGlobalPose() ) );
-			gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
-			mBatchStockColorWireSphere->draw();
+		const gl::ScopedModelMatrix scopedModelMatrix;
+		PxRigidActor* actor = static_cast<PxRigidActor*>( iter.second );
+		gl::multModelMatrix( Physx::from( actor->getGlobalPose() ) );
+		
+		PxShape* shape = nullptr;
+		actor->getShapes( &shape, sizeof( PxShape ) * actor->getNbShapes() );
+
+		for ( uint32_t i = 0; i < actor->getNbShapes(); ++i, ++shape ) {
+			switch ( shape->getGeometryType() ) {
+			case PxGeometryType::eBOX:
+				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
+				mBatchStockColorWireCube->draw();
+				break;
+			case PxGeometryType::ePLANE:
+				mBatchStockColorWirePlane->draw();
+				break;
+			case PxGeometryType::eSPHERE:
+				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
+				mBatchStockColorWireSphere->draw();
+				break;
+			}
 		}
 	}
 }
@@ -113,25 +121,38 @@ void BasicApp::draw()
 void BasicApp::keyDown( ci::app::KeyEvent event )
 {
 	switch ( event.getCode() ) {
+	case KeyEvent::KEY_SPACE:
+		{
+			vec3 p( randVec3() * 5.0f );
+			p.y		= glm::abs( p.y );
+			float r = randFloat( 0.01f, 1.0f );
+
+			PxRigidDynamic* actor = nullptr;
+			if ( randBool() ) {
+				actor = PxCreateDynamic( 
+					*mPhysx->getPhysics(), 
+					PxTransform( Physx::to( p ) ), 
+					PxBoxGeometry( Physx::to( vec3( r ) ) ),
+					*mMaterial, 
+					r * 100.0f );
+			} else {
+				actor = PxCreateDynamic( 
+					*mPhysx->getPhysics(), 
+					PxTransform( Physx::to( p ) ), 
+					PxSphereGeometry( r ), 
+					*mMaterial, 
+					r * 100.0f );
+			}
+
+			actor->setLinearVelocity( Physx::to( randVec3() ) );
+			mPhysx->addActor( actor, mPhysx->getScene() );
+		}
+		break;
 	case KeyEvent::KEY_f:
 		setFullScreen( !isFullScreen() );
 		break;
 	case KeyEvent::KEY_q:
 		quit();
-		break;
-	case KeyEvent::KEY_SPACE:
-		vec3 p( randVec3() * 5.0f );
-		p.y		= glm::abs( p.y );
-		float r = randFloat( 0.01f, 1.0f );
-
-		PxRigidDynamic* actor = PxCreateDynamic( 
-			*mPhysx->getPhysics(), 
-			PxTransform( Physx::to( p ) ), 
-			PxSphereGeometry( r ), 
-			*mMaterial, 
-			r * 100.0f );
-		actor->setLinearVelocity( Physx::to( randVec3() ) );
-		mPhysx->addActor( actor, mPhysx->getScene() );
 		break;
 	}
 }
