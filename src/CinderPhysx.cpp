@@ -6,9 +6,16 @@
 
 using namespace ci;
 using namespace physx;
+using namespace physx::debugger;
+using namespace physx::debugger::comm;
 using namespace std;
 
-PhysxRef Physx::create( const PxTolerancesScale& scale )
+PhysxRef Physx::create( bool connectToPvd )
+{
+	return create( PxTolerancesScale(), connectToPvd );
+}
+
+PhysxRef Physx::create( const PxTolerancesScale& scale, bool connectToPvd )
 {
 	PxCookingParams params( scale );
 	params.meshWeldTolerance	= 0.001f;
@@ -16,17 +23,17 @@ PhysxRef Physx::create( const PxTolerancesScale& scale )
 		PxMeshPreprocessingFlag::eWELD_VERTICES					| 
 		PxMeshPreprocessingFlag::eREMOVE_UNREFERENCED_VERTICES	| 
 		PxMeshPreprocessingFlag::eREMOVE_DUPLICATED_TRIANGLES );
-	return PhysxRef( new Physx( scale, params ) );
+	return PhysxRef( new Physx( scale, params, connectToPvd ) );
 }
 
-PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& params )
+PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& params, bool connectToPvd )
 {
-	return PhysxRef( new Physx( scale, params ) );
+	return PhysxRef( new Physx( scale, params, connectToPvd ) );
 }
 
-Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params )
+Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params, bool connectToPvd )
 : mCooking( nullptr ), mCpuDispatcher( nullptr ), mFoundation( nullptr ), 
-mPhysics( nullptr ), 
+mPhysics( nullptr ), mProfileZoneManager( nullptr ), mPvdConnection( nullptr ), 
 #if PX_SUPPORT_GPU_PHYSX
 mCudaContextManager( nullptr )
 #endif
@@ -34,7 +41,12 @@ mCudaContextManager( nullptr )
 	mFoundation = PxCreateFoundation( PX_PHYSICS_VERSION, mAllocator, getErrorCallback() );
 	CI_ASSERT( mFoundation != nullptr );
 
-	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, false, nullptr );
+	if ( connectToPvd ) {
+		mProfileZoneManager = &PxProfileZoneManager::createProfileZoneManager( mFoundation );
+		CI_ASSERT( mProfileZoneManager != nullptr );
+	}
+
+	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, connectToPvd, mProfileZoneManager );
 	CI_ASSERT( mPhysics != nullptr );
 	CI_ASSERT( PxInitExtensions( *mPhysics ) );
 
@@ -46,16 +58,21 @@ mCudaContextManager( nullptr )
 
 #if PX_SUPPORT_GPU_PHYSX
 	PxCudaContextManagerDesc cudaContextManagerDesc;
-	mCudaContextManager = PxCreateCudaContextManager( *mFoundation, cudaContextManagerDesc, nullptr );
+	mCudaContextManager = PxCreateCudaContextManager( *mFoundation, cudaContextManagerDesc, mProfileZoneManager );
 	if ( mCudaContextManager && !mCudaContextManager->contextIsValid() ) {
 		mCudaContextManager->release();
 		mCudaContextManager = nullptr;
 	}
 #endif
+
+	if ( connectToPvd && mPhysics->getPvdConnectionManager() ) {
+		mPhysics->getPvdConnectionManager()->addHandler( *this );
+	}
 }
 
 Physx::~Physx()
 {
+	pvdDisconnect();
 	for ( auto& iter : mActors ) {
 		iter.second->release();
 	}
@@ -235,6 +252,16 @@ PxPhysics* Physx::getPhysics() const
 	return mPhysics;
 }
 
+PxProfileZoneManager* Physx::getProfileZoneManager() const
+{
+	return mProfileZoneManager;
+}
+
+PvdConnection* Physx::getPvdConnection() const
+{
+	return mPvdConnection;
+}
+
 void Physx::update( float deltaInSeconds )
 {
 	for ( uint32_t id : mDeletedActors ) {
@@ -369,6 +396,48 @@ PxScene* Physx::getScene( uint32_t id ) const
 const map<uint32_t, PxScene*>& Physx::getScenes() const
 {
 	return mScenes;
+}
+
+void Physx::pvdConnect( const string& host, int32_t port, 
+						 int32_t timeout, PxVisualDebuggerConnectionFlags connectionFlags )
+{
+	pvdDisconnect();
+	if ( mPhysics->getPvdConnectionManager() ) {
+		mPvdConnection = PxVisualDebuggerExt::createConnection( 
+			mPhysics->getPvdConnectionManager(), 
+			host.c_str(), port, timeout, connectionFlags );
+	}
+}
+
+void Physx::pvdDisconnect()
+{
+	if ( mPhysics->getPvdConnectionManager() ) {
+		if ( mPvdConnection != nullptr ) {
+			if ( mPvdConnection->isConnected() ) {
+				mPvdConnection->disconnect();
+			}
+			mPvdConnection->release();
+			mPvdConnection = nullptr;
+		}
+		if ( mPhysics->getPvdConnectionManager()->isConnected() ) {
+			mPhysics->getPvdConnectionManager()->disconnect();
+		}
+	}
+}
+
+void Physx::onPvdSendClassDescriptions( PvdConnection& )
+{
+}
+
+void Physx::onPvdConnected( PvdConnection& )
+{
+	mPhysics->getVisualDebugger()->setVisualizeConstraints( true );
+	mPhysics->getVisualDebugger()->setVisualDebuggerFlag( PxVisualDebuggerFlag::eTRANSMIT_CONTACTS,		true );
+	mPhysics->getVisualDebugger()->setVisualDebuggerFlag( PxVisualDebuggerFlag::eTRANSMIT_SCENEQUERIES, true );
+}
+
+void Physx::onPvdDisconnected( PvdConnection& )
+{
 }
 
 PxErrorCallback& Physx::getErrorCallback()

@@ -91,6 +91,9 @@ BasicApp::BasicApp()
 	mBatchStockColorPlane		= gl::Batch::create( plane,		stockColor );
 	mBatchStockColorSphere		= gl::Batch::create( sphere,	stockColor );
 
+	// Connect to Physx Visual Debugger
+	mPhysx->pvdConnect();
+
 	resize();
 
 	gl::enableDepthRead();

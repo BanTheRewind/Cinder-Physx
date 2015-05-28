@@ -10,14 +10,15 @@
 #include <memory>
 #include <vector>
 
-typedef std::shared_ptr<class Physx>		PhysxRef;
+typedef std::shared_ptr<class Physx> PhysxRef;
 
-class Physx
+class Physx : public physx::debugger::comm::PvdConnectionHandler
 {
 public:
-	static PhysxRef									create( const physx::PxTolerancesScale& scale = physx::PxTolerancesScale() );
+	static PhysxRef									create( bool connectToPvd = true );
+	static PhysxRef									create( const physx::PxTolerancesScale& scale, bool connectToPvd = true );
 	static PhysxRef									create( const physx::PxTolerancesScale& scale, 
-														   const physx::PxCookingParams& params );
+														   const physx::PxCookingParams& params, bool connectToPvd = true );
 	~Physx();
 
 	static ci::mat3									from( const physx::PxMat33& m );
@@ -49,6 +50,8 @@ public:
 #endif
 	physx::PxFoundation*							getFoundation() const;
 	physx::PxPhysics*								getPhysics() const;
+	physx::PxProfileZoneManager*					getProfileZoneManager() const;
+	physx::debugger::comm::PvdConnection*			getPvdConnection() const;
 
 	void											update( float deltaInSeconds = 1.0f / 60.0f );
 
@@ -66,8 +69,18 @@ public:
 	void											eraseScene( physx::PxScene* scene );
 	physx::PxScene*									getScene( uint32_t id = 0 ) const;
 	const std::map<uint32_t, physx::PxScene*>&		getScenes() const;
+
+	void											pvdConnect( const std::string& host = "127.0.0.1", int32_t port = 5425, 
+																int32_t timeout = 1000, 
+																physx::debugger::PxVisualDebuggerConnectionFlags connectionFlags = 
+																physx::debugger::PxVisualDebuggerExt::getAllConnectionFlags() );
+	void											pvdDisconnect();
 protected:
-	Physx( const physx::PxTolerancesScale& scale, const physx::PxCookingParams& params );
+	Physx( const physx::PxTolerancesScale& scale, const physx::PxCookingParams& params, bool connectToPvd );
+
+	virtual void									onPvdSendClassDescriptions( physx::debugger::comm::PvdConnection& );
+	virtual void									onPvdConnected( physx::debugger::comm::PvdConnection& );
+	virtual void									onPvdDisconnected( physx::debugger::comm::PvdConnection& );
 
 	physx::PxErrorCallback&							getErrorCallback();
 	std::map<uint32_t, physx::PxActor*>				mActors;
@@ -80,5 +93,7 @@ protected:
 	std::vector<uint32_t>							mDeletedActors;
 	physx::PxFoundation*							mFoundation;
 	physx::PxPhysics*								mPhysics;
+	physx::PxProfileZoneManager*					mProfileZoneManager;
+	physx::debugger::comm::PvdConnection*			mPvdConnection;
 	std::map<uint32_t, physx::PxScene*>				mScenes;
 };
