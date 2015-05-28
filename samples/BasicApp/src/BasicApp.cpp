@@ -37,7 +37,7 @@ using namespace std;
 
 BasicApp::BasicApp()
 {
-	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
+	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 100.0f );
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 5.0f ), vec3( 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
 
@@ -47,12 +47,25 @@ BasicApp::BasicApp()
 	// Create a scene. Multiples scenes are allowed.
 	mPhysx->createScene();
 
+	// Set scene size
+	mPhysx->getScene()->lockWrite();
+
 	// Create a plane
 	mActorPlane = PxCreatePlane(
 		*mPhysx->getPhysics(),
 		PxPlane( Physx::to( vec3( 0.0f, 0.0f, 1.0f ) ), 0.0f ),
 		*mPhysx->getPhysics()->createMaterial( 0.5f, 0.5f, 0.1f )
 		);
+
+	// Scale plane
+	mat4 m = Physx::from( mActorPlane->getGlobalPose() );
+	CI_LOG_V( m );
+
+	m = glm::translate( m, vec3( 1.2f, 0.3f, 0.5f ) );
+	m = glm::rotate( m, 0.5f, vec3( 1.0f ) );
+	//m = glm::scale();
+	CI_LOG_V( m );
+	mActorPlane->setGlobalPose( PxTransform( Physx::to( m ) ) );
 
 	// Add the plane to the scene.
 	mPhysx->addActor( mActorPlane, mPhysx->getScene() );
@@ -101,9 +114,11 @@ void BasicApp::resize()
 
 void BasicApp::update()
 {
+	mPhysx->update();
 }
 
-CINDER_APP( BasicApp, RendererGl, []( App::Settings* settings )
+CINDER_APP( BasicApp, RendererGl( RendererGl::Options().msaa( 16 ) ), 
+			[]( App::Settings* settings )
 {
 	settings->disableFrameRate();
 	settings->setWindowSize( 1280, 720 );

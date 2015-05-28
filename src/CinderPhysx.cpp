@@ -25,7 +25,8 @@ PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& p
 }
 
 Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params )
-: mCooking( nullptr ), mCpuDispatcher( nullptr ), mFoundation( nullptr ), mPhysics( nullptr ), 
+: mCooking( nullptr ), mCpuDispatcher( nullptr ), mFoundation( nullptr ), 
+mPhysics( nullptr ), 
 #if PX_SUPPORT_GPU_PHYSX
 mCudaContextManager( nullptr )
 #endif
@@ -234,6 +235,15 @@ PxPhysics* Physx::getPhysics() const
 	return mPhysics;
 }
 
+void Physx::update( float deltaInSeconds )
+{
+	for ( auto& iter : mScenes ) {
+		iter.second->simulate( deltaInSeconds );
+		while ( !iter.second->fetchResults( true ) ) {
+		}
+	}
+}
+
 uint32_t Physx::addActor( PxActor* actor, uint32_t sceneId )
 {
 	return addActor(actor, getScene( sceneId ) );
@@ -309,6 +319,10 @@ uint32_t Physx::createScene( const PxSceneDesc& desc )
 {
 	CI_ASSERT( mPhysics != nullptr );
 	PxScene* scene	= mPhysics->createScene( desc );
+	PxBroadPhaseRegion broadPhaseRegion;
+	broadPhaseRegion.bounds = to( AxisAlignedBox( vec3( -100.0f ), vec3( 100.0f ) ) );
+	scene->lockWrite();
+	scene->addBroadPhaseRegion( broadPhaseRegion );
 	CI_ASSERT( scene != nullptr );
 	uint32_t id		= mScenes.empty() ? 0 : mScenes.rbegin()->first + 1;
 	mScenes[ id ]	= scene;

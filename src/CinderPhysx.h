@@ -49,6 +49,8 @@ public:
 	physx::PxFoundation*							getFoundation() const;
 	physx::PxPhysics*								getPhysics() const;
 
+	void											update( float deltaInSeconds = 1.0f / 60.0f );
+
 	uint32_t										addActor( physx::PxActor* actor, uint32_t sceneId );
 	uint32_t										addActor( physx::PxActor* actor, physx::PxScene* scene );
 	void											eraseActor( uint32_t id );
