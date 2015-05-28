@@ -107,12 +107,12 @@ void BasicApp::draw()
 
 	for ( const auto& iter : mPhysx->getActors() ) {
 
-		// Cast to rigid actor.
+		// Cast to rigid actor
 		if ( iter.second->getType() == PxActorType::eRIGID_DYNAMIC || 
 			 iter.second->getType() == PxActorType::eRIGID_STATIC ) {
 			PxRigidActor* actor = static_cast<PxRigidActor*>( iter.second );
 
-			// Apply actor's transofrm
+			// Apply actor's transform
 			const gl::ScopedModelMatrix scopedModelMatrix;
 			gl::multModelMatrix( Physx::from( actor->getGlobalPose() ) );
 		
@@ -126,7 +126,7 @@ void BasicApp::draw()
 					gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
 				}
 
-				// Use the appropriate batch to draw the geometry type.
+				// Use the appropriate batch to draw the geometry type
 				switch ( shape->getGeometryType() ) {
 				case PxGeometryType::eBOX:
 					mBatchStockColorCube->draw();
@@ -151,7 +151,7 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 	switch ( event.getCode() ) {
 	case KeyEvent::KEY_SPACE:
 		{
-			// Choose and random position and size
+			// Choose random position and size
 			vec3 p( randVec3() * 5.0f );
 			p.y		= glm::abs( p.y );
 			float r = randFloat( 0.01f, 1.0f );
@@ -199,7 +199,7 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 	}
 }
 
-void BasicApp::onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor)
+void BasicApp::onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor )
 {
 	mPhysx->eraseActor( actor );
 }
