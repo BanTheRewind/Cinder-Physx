@@ -18,6 +18,7 @@ PhysxRef Physx::create( const PxTolerancesScale& scale )
 	return PhysxRef( new Physx( scale, params ) );
 }
 
+// TODO use an options class which has these args and thread count as members
 PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& params )
 {
 	return PhysxRef( new Physx( scale, params ) );
