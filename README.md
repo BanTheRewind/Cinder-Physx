@@ -25,7 +25,7 @@ git submodule update --init
 
 ##### 6. Open and run a sample project.
 
-##### 7. Download and install Physx Visual Debugger (PVD) from here:
+##### 7. (Optional) Download and install Physx Visual Debugger (PVD) from here:
    https://developer.nvidia.com/gameworksdownload#?search=pvd
    
    NOTE: Open and run PVD _before_ running a sample app.
