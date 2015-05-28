@@ -44,14 +44,14 @@ using namespace std;
 BasicApp::BasicApp()
 {
 	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
-	mCamera.lookAt( vec3( 0.0f, 3.0f, 20.0f ), vec3( 0.0f, 2.0f, 0.0f ) );
+	mCamera.lookAt( vec3( 0.0f, 0.0f, 30.0f ), vec3( 0.0f, 0.0f, 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
 
 	// Initialize Physx
 	mPhysx = Physx::create();
 
 	// Create a material for all actors
-	mMaterial = mPhysx->getPhysics()->createMaterial( 0.5f, 0.5f, 1.0f );
+	mMaterial = mPhysx->getPhysics()->createMaterial( 0.5f, 0.5f, 0.5f );
 
 	// Create a scene. Multiples scenes are allowed.
 	mPhysx->createScene();
@@ -60,12 +60,18 @@ BasicApp::BasicApp()
 	// objects that have gone out of bounds.
 	mPhysx->getScene()->setBroadPhaseCallback( this );
 
-	// Add the plane to the scene.
+	// Add the plane to the scene
 	mPhysx->addActor( PxCreatePlane(
 		*mPhysx->getPhysics(),
-		PxPlane( Physx::to( vec3( 0.0f, 1.0f, 0.0f ) ), 0.0f ),
+		PxPlane( Physx::to( vec3( 0.0f, 1.0f, 0.0f ) ), 5.0f ),
 		*mMaterial
 		), mPhysx->getScene() );
+	
+	// Rotate plane so everything slides away
+	PxRigidStatic* floor	= static_cast<PxRigidStatic*>( mPhysx->getActor() );
+	mat4 m					= Physx::from( floor->getGlobalPose() );
+	m						= glm::rotate( m, 0.5f, vec3( 0.0f, -1.0f, 1.0f ) );
+	floor->setGlobalPose( PxTransform( Physx::to( m ) ) );
 
 	// Create shader and geometry batches
 	gl::GlslProgRef stockColor	= gl::getStockShader( gl::ShaderDef().color() );
@@ -75,7 +81,7 @@ BasicApp::BasicApp()
 	gl::VboMeshRef cube			= gl::VboMesh::create( geom::Cube().colors() );
 	gl::VboMeshRef plane		= gl::VboMesh::create( geom::Plane()
 													   .axes( vec3( 0.0f, 1.0f, 0.0f ), vec3( 0.0f, 0.0f, 1.0f ) )
-													   .size( vec2( 100.0f ) )
+													   .size( vec2( 200.0f ) )
 													   .subdivisions( ivec2( 32 ) ) );
 	gl::VboMeshRef sphere		= gl::VboMesh::create( geom::Sphere()
 													   .colors()
