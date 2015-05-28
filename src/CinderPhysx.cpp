@@ -80,13 +80,13 @@ Physx::~Physx()
 		mCudaContextManager = nullptr;
 	}
 #endif
-	if ( mFoundation != nullptr ) {
-		mFoundation->release();
-		mFoundation = nullptr;
-	}
 	if ( mPhysics != nullptr ) {
 		mPhysics->release();
 		mPhysics = nullptr;
+	}
+	if ( mFoundation != nullptr ) {
+		mFoundation->release();
+		mFoundation = nullptr;
 	}
 }
 
