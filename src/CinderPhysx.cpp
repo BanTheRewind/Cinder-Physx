@@ -1,24 +1,76 @@
 #include "CinderPhysx.h"
 
+#include "cinder/CinderAssert.h"
+#include "cinder/Log.h"
+
 using namespace ci;
 using namespace physx;
 using namespace std;
 
-PhysxRef Physx::create()
+PhysxRef Physx::create( const PxTolerancesScale& scale )
 {
-	return PhysxRef( new Physx() );
+	PxCookingParams params( scale );
+	params.meshWeldTolerance	= 0.001f;
+	params.meshPreprocessParams = PxMeshPreprocessingFlags( 
+		PxMeshPreprocessingFlag::eWELD_VERTICES					| 
+		PxMeshPreprocessingFlag::eREMOVE_UNREFERENCED_VERTICES	| 
+		PxMeshPreprocessingFlag::eREMOVE_DUPLICATED_TRIANGLES );
+	return PhysxRef( new Physx( scale, params ) );
 }
 
-Physx::Physx()
-: mBufferedActiveTransforms( nullptr ), mCooking( nullptr ), 
-mCpuDispatcher( nullptr ), mCudaContextManager( nullptr ), mFoundation( nullptr ), 
-mMaterial( nullptr ), mPhysics( nullptr ), mProfileZoneManager( nullptr ), 
-mScene( nullptr )
+PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& params )
 {
+	return PhysxRef( new Physx( scale, params ) );
+}
+
+Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params )
+: mBufferedActiveTransforms( nullptr ), mCooking( nullptr ), 
+mCpuDispatcher( nullptr ), mCudaContextManager( nullptr ), 
+mFoundation( nullptr ), mPhysics( nullptr ), mScene( nullptr )
+{
+	mFoundation = PxCreateFoundation( PX_PHYSICS_VERSION, mAllocator, getErrorCallback() );
+	CI_ASSERT( mFoundation != nullptr );
+
+#if PX_SUPPORT_GPU_PHYSX
+	PxCudaContextManagerDesc cudaContextManagerDesc;
+	mCudaContextManager = PxCreateCudaContextManager( *mFoundation, cudaContextManagerDesc, nullptr );
+	if ( mCudaContextManager && !mCudaContextManager->contextIsValid() ) {
+		mCudaContextManager->release();
+		mCudaContextManager = nullptr;
+	}
+#endif
+
+	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, false, nullptr );
+	CI_ASSERT( mPhysics != nullptr );
+
+	CI_ASSERT( PxInitExtensions( *mPhysics ) );
+
+	mCooking = PxCreateCooking( PX_PHYSICS_VERSION, *mFoundation, params );
+	CI_ASSERT( mCooking != nullptr );
+
+	mPhysics->registerDeletionListener( *this, PxDeletionEventFlag::eUSER_RELEASE );
+
+	mCpuDispatcher = PxDefaultCpuDispatcherCreate( 1 ); // TODO allow multiple threads
+	CI_ASSERT( mCpuDispatcher != nullptr );
 }
 
 Physx::~Physx()
 {
+}
+
+void Physx::onRelease( const PxBase* observed, void* userData, PxDeletionEventFlag::Enum deletionEvent )
+{
+	PX_UNUSED( userData );
+	PX_UNUSED( deletionEvent );
+
+	if ( observed->is<PxRigidActor>() ) {
+		const PxRigidActor* actor = static_cast<const PxRigidActor*>( observed );
+
+		//std::vector<PxRigidActor*>::iterator iter = std::find( mActors.begin(), mActors.end(), actor );
+		//if ( iter != mActors.end() ) {
+		//	mActors.erase( iter );
+		//}
+	}
 }
 
 mat3 Physx::from( const PxMat33& m )
@@ -124,52 +176,63 @@ PxBounds3 Physx::to( const AxisAlignedBox& b )
 	return PxBounds3( to( b.getMin() ), to( b.getMax() ) );
 }
 
-PxDefaultAllocator Physx::getAllocator()
+void Physx::createScene()
+{
+	CI_ASSERT( mCpuDispatcher	!= nullptr );
+	CI_ASSERT( mPhysics			!= nullptr );
+	PxSceneDesc desc( mPhysics->getTolerancesScale() );
+	desc.cpuDispatcher		= mCpuDispatcher;
+	desc.filterShader		= PxDefaultSimulationFilterShader;
+	desc.flags				|= PxSceneFlag::eENABLE_ACTIVETRANSFORMS | PxSceneFlag::eREQUIRE_RW_LOCK;
+	desc.gravity			= PxVec3( 0.0f, -9.81f, 0.0f );
+	if ( mCudaContextManager != nullptr && mCudaContextManager->contextIsValid() ) {
+		desc.gpuDispatcher	= mCudaContextManager->getGpuDispatcher();
+	}
+	createScene( desc );
+}
+
+void Physx::createScene( const PxSceneDesc& desc )
+{
+	mScene = mPhysics->createScene( desc );
+	CI_ASSERT( mScene != nullptr );
+}
+
+PxDefaultAllocator Physx::getAllocator() const
 {
 	return mAllocator;
 }
 
-PxActiveTransform* Physx::getBufferedActiveTransforms()
+PxActiveTransform* Physx::getBufferedActiveTransforms() const
 {
 	return mBufferedActiveTransforms;
 }
 
-PxCooking* Physx::getCooking()
+PxCooking* Physx::getCooking() const
 {
 	return mCooking;
 }
 
-PxDefaultCpuDispatcher* Physx::getCpuDispatcher()
+PxDefaultCpuDispatcher* Physx::getCpuDispatcher() const
 {
 	return mCpuDispatcher;
 }
 
-PxCudaContextManager* Physx::getCudaContextManager()
+PxCudaContextManager* Physx::getCudaContextManager() const
 {
 	return mCudaContextManager;
 }
 
-PxFoundation* Physx::getFoundation()
+PxFoundation* Physx::getFoundation() const
 {
 	return mFoundation;
 }
 
-PxMaterial* Physx::getMaterial()
-{
-	return mMaterial;
-}
-
-PxPhysics* Physx::getPhysics()
+PxPhysics* Physx::getPhysics() const
 {
 	return mPhysics;
 }
 
-PxProfileZoneManager* Physx::getProfileZoneManager()
-{
-	return mProfileZoneManager;
-}
-
-PxScene* Physx::getScene()
+PxScene* Physx::getScene() const
 {
 	return mScene;
 }

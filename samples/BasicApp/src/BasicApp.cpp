@@ -21,14 +21,12 @@ private:
 	ci::CameraPersp						mCamera;
 	ci::CameraUi						mCamUi;
 
-	double								mElapsedSeconds;
-
-	std::vector<physx::PxRigidActor*>	mActors;
-	std::vector<physx::PxActor*>		mDeletedActors;
+	PhysxRef							mPhysx;
 };
 
 using namespace ci;
 using namespace ci::app;
+using namespace physx;
 using namespace std;
 
 #include "cinder/Log.h"
@@ -36,11 +34,12 @@ using namespace std;
 
 BasicApp::BasicApp()
 {
-	mElapsedSeconds	= 0.0;
-
 	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 5.0f ), vec3( 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
+
+	mPhysx = Physx::create();
+	mPhysx->createScene();
 
 	resize();
 
@@ -76,10 +75,6 @@ void BasicApp::resize()
 
 void BasicApp::update()
 {
-	double e	= getElapsedSeconds();
-	float d		= (float)( e - mElapsedSeconds );
-
-	mElapsedSeconds = e;
 }
 
 CINDER_APP( BasicApp, RendererGl, []( App::Settings* settings )

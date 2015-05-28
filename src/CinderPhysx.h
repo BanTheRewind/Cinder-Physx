@@ -10,10 +10,12 @@
 
 typedef std::shared_ptr<class Physx>		PhysxRef;
 
-class Physx
+class Physx : public physx::PxDeletionListener
 {
 public:
-	static PhysxRef							create();
+	static PhysxRef							create( const physx::PxTolerancesScale& scale = physx::PxTolerancesScale() );
+	static PhysxRef							create( const physx::PxTolerancesScale& scale, 
+												   const physx::PxCookingParams& params );
 	~Physx();
 
 	static ci::mat3							from( const physx::PxMat33& m );
@@ -35,18 +37,22 @@ public:
 	static physx::PxTransform				to( const std::pair<ci::quat, ci::vec3>& p );
 	static physx::PxBounds3					to( const ci::AxisAlignedBox& b );
 
-	physx::PxDefaultAllocator				getAllocator();
-	physx::PxActiveTransform*				getBufferedActiveTransforms();
-	physx::PxCooking*						getCooking();
-	physx::PxDefaultCpuDispatcher*			getCpuDispatcher();
-	physx::PxCudaContextManager*			getCudaContextManager();
-	physx::PxFoundation*					getFoundation();
-	physx::PxMaterial*						getMaterial();
-	physx::PxPhysics*						getPhysics();
-	physx::PxProfileZoneManager*			getProfileZoneManager();
-	physx::PxScene*							getScene();
+	void									createScene();
+	void									createScene( const physx::PxSceneDesc& desc );
+
+	physx::PxDefaultAllocator				getAllocator() const;
+	physx::PxActiveTransform*				getBufferedActiveTransforms() const;
+	physx::PxCooking*						getCooking() const;
+	physx::PxDefaultCpuDispatcher*			getCpuDispatcher() const;
+	physx::PxCudaContextManager*			getCudaContextManager() const;
+	physx::PxFoundation*					getFoundation() const;
+	physx::PxPhysics*						getPhysics() const;
+	physx::PxScene*							getScene() const;
 protected:
-	Physx();
+	Physx( const physx::PxTolerancesScale& scale, const physx::PxCookingParams& params );
+
+	virtual void							onRelease( const physx::PxBase* observed, void* userData, 
+													  physx::PxDeletionEventFlag::Enum deletionEvent );
 
 	physx::PxErrorCallback&					getErrorCallback();
 	physx::PxDefaultAllocator				mAllocator;
@@ -55,8 +61,6 @@ protected:
 	physx::PxDefaultCpuDispatcher*			mCpuDispatcher;
 	physx::PxCudaContextManager*			mCudaContextManager;
 	physx::PxFoundation*					mFoundation;
-	physx::PxMaterial*						mMaterial;
 	physx::PxPhysics*						mPhysics;
-	physx::PxProfileZoneManager*			mProfileZoneManager;
 	physx::PxScene*							mScene;
 };
