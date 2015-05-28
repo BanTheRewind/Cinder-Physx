@@ -2,6 +2,7 @@
 
 #include "cinder/CinderAssert.h"
 #include "cinder/Log.h"
+#include "cinder/System.h"
 
 using namespace ci;
 using namespace physx;
@@ -18,19 +19,29 @@ PhysxRef Physx::create( const PxTolerancesScale& scale )
 	return PhysxRef( new Physx( scale, params ) );
 }
 
-// TODO use an options class which has these args and thread count as members
 PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& params )
 {
 	return PhysxRef( new Physx( scale, params ) );
 }
 
 Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params )
-: mBufferedActiveTransforms( nullptr ), mCooking( nullptr ), 
-mCpuDispatcher( nullptr ), mCudaContextManager( nullptr ), 
-mFoundation( nullptr ), mPhysics( nullptr ), mScene( nullptr )
+: mCooking( nullptr ), mCpuDispatcher( nullptr ), mFoundation( nullptr ), mPhysics( nullptr ), 
+#if PX_SUPPORT_GPU_PHYSX
+mCudaContextManager( nullptr )
+#endif
 {
 	mFoundation = PxCreateFoundation( PX_PHYSICS_VERSION, mAllocator, getErrorCallback() );
 	CI_ASSERT( mFoundation != nullptr );
+
+	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, false, nullptr );
+	CI_ASSERT( mPhysics != nullptr );
+	CI_ASSERT( PxInitExtensions( *mPhysics ) );
+
+	mCooking = PxCreateCooking( PX_PHYSICS_VERSION, *mFoundation, params );
+	CI_ASSERT( mCooking != nullptr );
+
+	mCpuDispatcher = PxDefaultCpuDispatcherCreate( System::getNumCores() );
+	CI_ASSERT( mCpuDispatcher != nullptr );
 
 #if PX_SUPPORT_GPU_PHYSX
 	PxCudaContextManagerDesc cudaContextManagerDesc;
@@ -40,37 +51,41 @@ mFoundation( nullptr ), mPhysics( nullptr ), mScene( nullptr )
 		mCudaContextManager = nullptr;
 	}
 #endif
-
-	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, false, nullptr );
-	CI_ASSERT( mPhysics != nullptr );
-
-	CI_ASSERT( PxInitExtensions( *mPhysics ) );
-
-	mCooking = PxCreateCooking( PX_PHYSICS_VERSION, *mFoundation, params );
-	CI_ASSERT( mCooking != nullptr );
-
-	mPhysics->registerDeletionListener( *this, PxDeletionEventFlag::eUSER_RELEASE );
-
-	mCpuDispatcher = PxDefaultCpuDispatcherCreate( 1 ); // TODO allow multiple threads
-	CI_ASSERT( mCpuDispatcher != nullptr );
 }
 
 Physx::~Physx()
 {
-}
+	for ( auto& iter : mActors ) {
+		iter.second->release();
+	}
+	mActors.clear();
 
-void Physx::onRelease( const PxBase* observed, void* userData, PxDeletionEventFlag::Enum deletionEvent )
-{
-	PX_UNUSED( userData );
-	PX_UNUSED( deletionEvent );
+	for ( auto& iter : mScenes ) {
+		iter.second->release();
+	}
+	mScenes.clear();
 
-	if ( observed->is<PxRigidActor>() ) {
-		const PxRigidActor* actor = static_cast<const PxRigidActor*>( observed );
-
-		//std::vector<PxRigidActor*>::iterator iter = std::find( mActors.begin(), mActors.end(), actor );
-		//if ( iter != mActors.end() ) {
-		//	mActors.erase( iter );
-		//}
+	if ( mCooking != nullptr ) {
+		mCooking->release();
+		mCooking = nullptr;
+	}
+	if ( mCpuDispatcher != nullptr ) {
+		mCpuDispatcher->release();
+		mCpuDispatcher = nullptr;
+	}
+#if PX_SUPPORT_GPU_PHYSX
+	if ( mCpuDispatcher != nullptr ) {
+		mCudaContextManager->release();
+		mCudaContextManager = nullptr;
+	}
+#endif
+	if ( mFoundation != nullptr ) {
+		mFoundation->release();
+		mFoundation = nullptr;
+	}
+	if ( mPhysics != nullptr ) {
+		mPhysics->release();
+		mPhysics = nullptr;
 	}
 }
 
@@ -177,35 +192,9 @@ PxBounds3 Physx::to( const AxisAlignedBox& b )
 	return PxBounds3( to( b.getMin() ), to( b.getMax() ) );
 }
 
-void Physx::createScene()
-{
-	CI_ASSERT( mCpuDispatcher	!= nullptr );
-	CI_ASSERT( mPhysics			!= nullptr );
-	PxSceneDesc desc( mPhysics->getTolerancesScale() );
-	desc.cpuDispatcher		= mCpuDispatcher;
-	desc.filterShader		= PxDefaultSimulationFilterShader;
-	desc.flags				|= PxSceneFlag::eENABLE_ACTIVETRANSFORMS | PxSceneFlag::eREQUIRE_RW_LOCK;
-	desc.gravity			= PxVec3( 0.0f, -9.81f, 0.0f );
-	if ( mCudaContextManager != nullptr && mCudaContextManager->contextIsValid() ) {
-		desc.gpuDispatcher	= mCudaContextManager->getGpuDispatcher();
-	}
-	createScene( desc );
-}
-
-void Physx::createScene( const PxSceneDesc& desc )
-{
-	mScene = mPhysics->createScene( desc );
-	CI_ASSERT( mScene != nullptr );
-}
-
 PxDefaultAllocator Physx::getAllocator() const
 {
 	return mAllocator;
-}
-
-PxActiveTransform* Physx::getBufferedActiveTransforms() const
-{
-	return mBufferedActiveTransforms;
 }
 
 PxCooking* Physx::getCooking() const
@@ -218,10 +207,12 @@ PxDefaultCpuDispatcher* Physx::getCpuDispatcher() const
 	return mCpuDispatcher;
 }
 
+#if PX_SUPPORT_GPU_PHYSX
 PxCudaContextManager* Physx::getCudaContextManager() const
 {
 	return mCudaContextManager;
 }
+#endif
 
 PxFoundation* Physx::getFoundation() const
 {
@@ -233,9 +224,124 @@ PxPhysics* Physx::getPhysics() const
 	return mPhysics;
 }
 
-PxScene* Physx::getScene() const
+uint32_t Physx::addActor( PxActor* actor, uint32_t sceneId )
 {
-	return mScene;
+	return addActor(actor, getScene( sceneId ) );
+}
+
+uint32_t Physx::addActor( PxActor* actor, PxScene* scene )
+{
+	uint32_t id = mActors.empty() ? 0 : mActors.rbegin()->first + 1;
+	mActors[ id ] = actor;
+	scene->addActor( *actor );
+	return id;
+}
+
+void Physx::eraseActor( uint32_t id )
+{
+	map<uint32_t, PxActor*>::iterator iter = mActors.find( id );
+	if ( iter != mActors.end() ) {
+		if ( iter->second != nullptr ) {
+			iter->second->release();
+			iter->second = nullptr;
+		}
+		mActors.erase( iter );
+	}
+}
+
+void Physx::eraseActor( PxActor* actor )
+{
+	for ( map<uint32_t, PxActor*>::iterator iter = mActors.begin(); iter != mActors.end(); ) {
+		if ( iter->second == actor ) {
+			if ( actor != nullptr ) {
+				actor->release();
+				actor = nullptr;
+			}
+			iter = mActors.erase( iter );
+			break;
+		} else {
+			++iter;
+		}
+	}
+}
+
+PxActor* Physx::getActor( uint32_t id ) const
+{
+	if ( mActors.find( id ) != mActors.end() ) {
+		return mActors.at( id );
+	}
+	return nullptr;
+}
+const map<uint32_t, PxActor*>& Physx::getActors() const
+{
+	return mActors;
+}
+
+uint32_t Physx::createScene()
+{
+	CI_ASSERT( mPhysics != nullptr );
+	CI_ASSERT( mCpuDispatcher != nullptr );
+	PxSceneDesc desc( mPhysics->getTolerancesScale() );
+	desc.broadPhaseType = PxBroadPhaseType::eMBP;
+	desc.cpuDispatcher	= mCpuDispatcher;
+	desc.filterShader	= PxDefaultSimulationFilterShader;
+	desc.flags			|= PxSceneFlag::eENABLE_ACTIVETRANSFORMS | PxSceneFlag::eREQUIRE_RW_LOCK;
+	desc.gravity		= PxVec3( 0.0f, -9.81f, 0.0f );
+	if ( mCudaContextManager != nullptr && mCudaContextManager->contextIsValid() ) {
+		desc.gpuDispatcher = mCudaContextManager->getGpuDispatcher();
+	}
+	return createScene( desc );
+}
+
+uint32_t Physx::createScene( const PxSceneDesc& desc )
+{
+	CI_ASSERT( mPhysics != nullptr );
+	PxScene* scene	= mPhysics->createScene( desc );
+	CI_ASSERT( scene != nullptr );
+	uint32_t id		= mScenes.empty() ? 0 : mScenes.rbegin()->first + 1;
+	mScenes[ id ]	= scene;
+	return id;
+}
+
+void Physx::eraseScene( uint32_t id )
+{
+	map<uint32_t, PxScene*>::iterator iter = mScenes.find( id );
+	if ( iter != mScenes.end() ) {
+		if ( iter->second != nullptr ) {
+			iter->second->release();
+			iter->second = nullptr;
+		}
+		mScenes.erase( iter );
+	}
+}
+
+void Physx::eraseScene( PxScene* scene )
+{
+	for ( map<uint32_t, PxScene*>::iterator iter = mScenes.begin(); iter != mScenes.end(); ) {
+		if ( iter->second == scene ) {
+			if ( scene != nullptr ) {
+				scene->release();
+				scene = nullptr;
+			}
+			iter = mScenes.erase( iter );
+			break;
+		} else {
+			++iter;
+		}
+	}
+}
+
+PxScene* Physx::getScene( uint32_t id ) const
+{
+	if ( mScenes.find( id ) != mScenes.end() ) {
+		return mScenes.at( id );
+	}
+	return nullptr;
+}
+
+const map<uint32_t, PxScene*>& Physx::getScenes() const
+{
+	return mScenes;
 }
 
 PxErrorCallback& Physx::getErrorCallback()

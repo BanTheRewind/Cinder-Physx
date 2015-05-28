@@ -13,15 +13,18 @@ class BasicApp : public ci::app::App
 public:
 	BasicApp();
 
-	void								draw() override;
-	void								keyDown( ci::app::KeyEvent event ) override;
-	void								resize() override;
-	void								update() override;
+	void					draw() override;
+	void					keyDown( ci::app::KeyEvent event ) override;
+	void					resize() override;
+	void					update() override;
 private:
-	ci::CameraPersp						mCamera;
-	ci::CameraUi						mCamUi;
+	ci::CameraPersp			mCamera;
+	ci::CameraUi			mCamUi;
 
-	PhysxRef							mPhysx;
+	ci::gl::BatchRef		mBatchStockColorWirePlane;
+	physx::PxRigidStatic*	mPlane;
+
+	PhysxRef				mPhysx;
 };
 
 using namespace ci;
@@ -38,8 +41,21 @@ BasicApp::BasicApp()
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 5.0f ), vec3( 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
 
+	// Initialize Physx
 	mPhysx = Physx::create();
+
+	// Create a scene. Multiples scenes are allowed.
 	mPhysx->createScene();
+
+	// Create a plane
+	mPlane = PxCreatePlane(
+		*mPhysx->getPhysics(),
+		PxPlane( Physx::to( vec3( 0.0f, 1.0f, 0.0f ) ), 0 ),
+		*mPhysx->getPhysics()->createMaterial( 0.5f, 0.5f, 0.1f )
+		);
+
+	// Add the plane to the scene.
+	mPhysx->addActor( mPlane, mPhysx->getScene() );
 
 	resize();
 
