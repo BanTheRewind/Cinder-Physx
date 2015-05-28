@@ -21,9 +21,10 @@ private:
 	ci::CameraPersp			mCamera;
 	ci::CameraUi			mCamUi;
 
-	ci::gl::BatchRef		mBatchStockColorWireCube;
+	ci::gl::BatchRef		mBatchStockColorCapsule;
+	ci::gl::BatchRef		mBatchStockColorCube;
 	ci::gl::BatchRef		mBatchStockColorWirePlane;
-	ci::gl::BatchRef		mBatchStockColorWireSphere;
+	ci::gl::BatchRef		mBatchStockColorSphere;
 
 	physx::PxMaterial*		mMaterial;
 	PhysxRef				mPhysx;
@@ -68,21 +69,26 @@ BasicApp::BasicApp()
 
 	// Create shader and geometry batches
 	gl::GlslProgRef stockColor	= gl::getStockShader(gl::ShaderDef().color() );
-	gl::VboMeshRef wireCube		= gl::VboMesh::create( geom::WireCube() );
+	gl::VboMeshRef capsule		= gl::VboMesh::create( geom::Capsule()
+													   .subdivisionsAxis( 16 )
+													   .subdivisionsHeight( 16 ) );
+	gl::VboMeshRef cube			= gl::VboMesh::create( geom::Cube().colors() );
 	gl::VboMeshRef wirePlane	= gl::VboMesh::create( geom::WirePlane()
 													   .axes( vec3( 0.0f, 1.0f, 0.0f ), vec3( 0.0f, 0.0f, 1.0f ) )
 													   .size( vec2( 100.0f ) )
 													   .subdivisions( ivec2( 32 ) ) );
-	gl::VboMeshRef wireSphere	= gl::VboMesh::create( geom::WireSphere()
-													   .subdivisionsAxis( 16 )
-													   .subdivisionsCircle( 16 )
-													   .subdivisionsHeight( 16 ) );
-	mBatchStockColorWireCube	= gl::Batch::create( wireCube,		stockColor );
-	mBatchStockColorWirePlane	= gl::Batch::create( wirePlane,		stockColor );
-	mBatchStockColorWireSphere	= gl::Batch::create( wireSphere,	stockColor );
+	gl::VboMeshRef sphere		= gl::VboMesh::create( geom::Sphere()
+													   .colors()
+													   .subdivisions( 32 ) );
+	mBatchStockColorCapsule		= gl::Batch::create( capsule,	stockColor );
+	mBatchStockColorCube		= gl::Batch::create( cube,		stockColor );
+	mBatchStockColorWirePlane	= gl::Batch::create( wirePlane,	stockColor );
+	mBatchStockColorSphere		= gl::Batch::create( sphere,	stockColor );
 
 	resize();
 
+	gl::enableDepthRead();
+	gl::enableDepthWrite();
 	gl::enableVerticalSync();
 }
 
@@ -104,14 +110,18 @@ void BasicApp::draw()
 			switch ( shape->getGeometryType() ) {
 			case PxGeometryType::eBOX:
 				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
-				mBatchStockColorWireCube->draw();
+				mBatchStockColorCube->draw();
+				break;
+			case PxGeometryType::eCAPSULE:
+				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
+				mBatchStockColorCapsule->draw();
 				break;
 			case PxGeometryType::ePLANE:
 				mBatchStockColorWirePlane->draw();
 				break;
 			case PxGeometryType::eSPHERE:
 				gl::scale( Physx::from( actor->getWorldBounds() ).getSize() );
-				mBatchStockColorWireSphere->draw();
+				mBatchStockColorSphere->draw();
 				break;
 			}
 		}
@@ -128,20 +138,31 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 			float r = randFloat( 0.01f, 1.0f );
 
 			PxRigidDynamic* actor = nullptr;
-			if ( randBool() ) {
+			switch ( randInt( 0, 3 ) ) {
+			case 0:
 				actor = PxCreateDynamic( 
 					*mPhysx->getPhysics(), 
 					PxTransform( Physx::to( p ) ), 
 					PxBoxGeometry( Physx::to( vec3( r ) ) ),
 					*mMaterial, 
 					r * 100.0f );
-			} else {
+				break;
+			case 1:
 				actor = PxCreateDynamic( 
 					*mPhysx->getPhysics(), 
 					PxTransform( Physx::to( p ) ), 
 					PxSphereGeometry( r ), 
 					*mMaterial, 
 					r * 100.0f );
+				break;
+			case 2:
+				actor = PxCreateDynamic( 
+					*mPhysx->getPhysics(), 
+					PxTransform( Physx::to( p ) ), 
+					PxCapsuleGeometry( r, r * 0.5f ), 
+					*mMaterial, 
+					r * 100.0f );
+				break;
 			}
 
 			actor->setLinearVelocity( Physx::to( randVec3() ) );
