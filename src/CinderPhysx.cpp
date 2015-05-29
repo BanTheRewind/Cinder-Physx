@@ -432,6 +432,7 @@ void Physx::onPvdSendClassDescriptions( PvdConnection& )
 void Physx::onPvdConnected( PvdConnection& )
 {
 	mPhysics->getVisualDebugger()->setVisualizeConstraints( true );
+	mPhysics->getVisualDebugger()->setVisualDebuggerFlag( PxVisualDebuggerFlag::eTRANSMIT_CONSTRAINTS,	true );
 	mPhysics->getVisualDebugger()->setVisualDebuggerFlag( PxVisualDebuggerFlag::eTRANSMIT_CONTACTS,		true );
 	mPhysics->getVisualDebugger()->setVisualDebuggerFlag( PxVisualDebuggerFlag::eTRANSMIT_SCENEQUERIES, true );
 }
