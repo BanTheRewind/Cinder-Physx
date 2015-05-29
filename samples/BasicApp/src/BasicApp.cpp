@@ -5,9 +5,6 @@
 
 #include "CinderPhysx.h"
 
-#include "PxRigidDynamic.h"
-#include "PxShape.h"
-
 class BasicApp : public ci::app::App, public physx::PxBroadPhaseCallback
 {
 public:
