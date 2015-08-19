@@ -10,6 +10,37 @@ using namespace physx::debugger;
 using namespace physx::debugger::comm;
 using namespace std;
 
+PxFilterFlags FilterShader(
+	PxFilterObjectAttributes attributes0, PxFilterData filterData0,
+	PxFilterObjectAttributes attributes1, PxFilterData filterData1,
+	PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize )
+{
+	pairFlags = PxPairFlag::eTRIGGER_DEFAULT | PxPairFlag::eCONTACT_DEFAULT | PxPairFlag::eNOTIFY_TOUCH_FOUND;
+	return PxFilterFlag::eDEFAULT;
+}
+
+#if defined( CINDER_COCOA_TOUCH )
+PhysxRef Physx::create()
+{
+	return create( PxTolerancesScale() );
+}
+
+PhysxRef Physx::create( const PxTolerancesScale& scale )
+{
+	PxCookingParams params( scale );
+	params.meshWeldTolerance	= 0.001f;
+	params.meshPreprocessParams = PxMeshPreprocessingFlags(
+														   PxMeshPreprocessingFlag::eWELD_VERTICES					|
+														   PxMeshPreprocessingFlag::eREMOVE_UNREFERENCED_VERTICES	|
+														   PxMeshPreprocessingFlag::eREMOVE_DUPLICATED_TRIANGLES );
+	return PhysxRef( new Physx( scale, params ) );
+}
+
+PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& params )
+{
+	return PhysxRef( new Physx( scale, params ) );
+}
+#else
 PhysxRef Physx::create( bool connectToPvd )
 {
 	return create( PxTolerancesScale(), connectToPvd );
@@ -30,23 +61,37 @@ PhysxRef Physx::create( const PxTolerancesScale& scale, const PxCookingParams& p
 {
 	return PhysxRef( new Physx( scale, params, connectToPvd ) );
 }
+#endif
 
-Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params, bool connectToPvd )
-: mCooking( nullptr ), mCpuDispatcher( nullptr ), mFoundation( nullptr ), 
-mPhysics( nullptr ), mProfileZoneManager( nullptr ), mPvdConnection( nullptr ), 
+Physx::Physx( const PxTolerancesScale& scale, const PxCookingParams& params
+#if !defined( CINDER_COCOA_TOUCH )
+, bool connectToPvd
+#endif
+)
+: mCooking( nullptr ), mCpuDispatcher( nullptr ), mFoundation( nullptr ),
+mPhysics( nullptr ), mProfileZoneManager( nullptr )
+#if !defined( CINDER_COCOA_TOUCH )
+, mPvdConnection( nullptr )
+#endif
 #if PX_SUPPORT_GPU_PHYSX
-mCudaContextManager( nullptr )
+, mCudaContextManager( nullptr )
 #endif
 {
 	mFoundation = PxCreateFoundation( PX_PHYSICS_VERSION, mAllocator, getErrorCallback() );
 	CI_ASSERT( mFoundation != nullptr );
 
+#if !defined( CINDER_COCOA_TOUCH )
 	if ( connectToPvd ) {
 		mProfileZoneManager = &PxProfileZoneManager::createProfileZoneManager( mFoundation );
 		CI_ASSERT( mProfileZoneManager != nullptr );
 	}
+#endif
 
+#if defined( CINDER_COCOA_TOUCH )
+	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, false, mProfileZoneManager );
+#else
 	mPhysics = PxCreatePhysics( PX_PHYSICS_VERSION, *mFoundation, scale, connectToPvd, mProfileZoneManager );
+#endif
 	CI_ASSERT( mPhysics != nullptr );
 	CI_ASSERT( PxInitExtensions( *mPhysics ) );
 
@@ -65,14 +110,18 @@ mCudaContextManager( nullptr )
 	}
 #endif
 
+#if !defined( CINDER_COCOA_TOUCH )
 	if ( connectToPvd && mPhysics->getPvdConnectionManager() ) {
 		mPhysics->getPvdConnectionManager()->addHandler( *this );
 	}
+#endif
 }
 
 Physx::~Physx()
 {
+#if !defined( CINDER_COCOA_TOUCH )
 	pvdDisconnect();
+#endif
 	for ( auto& iter : mActors ) {
 		iter.second->release();
 	}
@@ -92,7 +141,7 @@ Physx::~Physx()
 		mCpuDispatcher = nullptr;
 	}
 #if PX_SUPPORT_GPU_PHYSX
-	if ( mCpuDispatcher != nullptr ) {
+	if ( mCudaContextManager != nullptr ) {
 		mCudaContextManager->release();
 		mCudaContextManager = nullptr;
 	}
@@ -257,10 +306,12 @@ PxProfileZoneManager* Physx::getProfileZoneManager() const
 	return mProfileZoneManager;
 }
 
+#if !defined( CINDER_COCOA_TOUCH )
 PvdConnection* Physx::getPvdConnection() const
 {
 	return mPvdConnection;
 }
+#endif
 
 void Physx::update( float deltaInSeconds )
 {
@@ -298,6 +349,13 @@ uint32_t Physx::addActor( PxActor* actor, PxScene* scene )
 	return id;
 }
 
+void Physx::clearActors()
+{
+	for ( const auto& iter : mActors ) {
+		eraseActor( iter.first );
+	}
+}
+
 void Physx::eraseActor( uint32_t id )
 {
 	mDeletedActors.push_back( id );
@@ -328,6 +386,17 @@ const map<uint32_t, PxActor*>& Physx::getActors() const
 	return mActors;
 }
 
+void Physx::clearScenes()
+{
+	vector<uint32_t> ids;
+	for ( const auto& iter : mScenes ) {
+		ids.push_back( iter.first );
+	}
+	for ( uint32_t id : ids ) {
+		eraseScene( id );
+	}
+}
+
 uint32_t Physx::createScene()
 {
 	CI_ASSERT( mPhysics != nullptr );
@@ -335,12 +404,16 @@ uint32_t Physx::createScene()
 	PxSceneDesc desc( mPhysics->getTolerancesScale() );
 	desc.broadPhaseType = PxBroadPhaseType::eMBP;
 	desc.cpuDispatcher	= mCpuDispatcher;
-	desc.filterShader	= PxDefaultSimulationFilterShader;
+	desc.filterShader	= FilterShader;
+
 	desc.flags			|= PxSceneFlag::eENABLE_ACTIVETRANSFORMS;
 	desc.gravity		= PxVec3( 0.0f, -9.81f, 0.0f );
+	
+#if PX_SUPPORT_GPU_PHYSX
 	if ( mCudaContextManager != nullptr && mCudaContextManager->contextIsValid() ) {
 		desc.gpuDispatcher = mCudaContextManager->getGpuDispatcher();
 	}
+#endif
 	return createScene( desc );
 }
 
@@ -398,6 +471,58 @@ const map<uint32_t, PxScene*>& Physx::getScenes() const
 	return mScenes;
 }
 
+PxConvexMesh* Physx::createConvexMesh( const vector<vec3>& positions, PxConvexFlags flags )
+{
+	if ( positions.empty() ) {
+		return nullptr;
+	}
+	PxConvexMeshDesc desc;
+	desc.points.count	= (PxU32)positions.size();
+	desc.points.data	= (PxVec3*)&positions[ 0 ];
+	desc.points.stride	= sizeof( PxVec3 );
+	desc.flags			= flags;
+	
+	PxDefaultMemoryOutputStream buffer;
+	if ( !mCooking->cookConvexMesh( desc, buffer ) ) {
+		return nullptr;
+	}
+	
+	PxDefaultMemoryInputData input( buffer.getData(), buffer.getSize() );
+	return mPhysics->createConvexMesh( input );
+}
+
+PxTriangleMesh* Physx::createTriangleMesh( const vector<vec3>& positions, size_t numTriangles, vector<uint32_t> indices )
+{
+	if ( positions.empty() ) {
+		return nullptr;
+	}
+	if ( indices.empty() ) {
+		CI_ASSERT( positions.size() % 3 == 0 );
+		uint32_t count = (uint32_t)positions.size();
+		for ( uint32_t i = 0; i < count; ++i ) {
+			indices.push_back( i );
+		}
+		numTriangles = indices.size() / 3;
+	}
+	
+	PxTriangleMeshDesc desc;
+	desc.points.count		= (PxU32)positions.size();
+	desc.points.data		= (PxVec3*)&positions[ 0 ];
+	desc.points.stride		= sizeof( PxVec3 );
+	desc.triangles.count	= (PxU32)numTriangles;
+	desc.triangles.data		= (PxU32*)&indices[ 0 ];
+	desc.triangles.stride	= sizeof( PxU32 ) * 3;
+	
+	PxDefaultMemoryOutputStream writeBuffer;
+	if ( !mCooking->cookTriangleMesh( desc, writeBuffer ) ) {
+		return nullptr;
+	}
+	
+	PxDefaultMemoryInputData readBuffer( writeBuffer.getData(), writeBuffer.getSize() );
+	return mPhysics->createTriangleMesh( readBuffer );
+}
+
+#if !defined( CINDER_COCOA_TOUCH )
 void Physx::pvdConnect( const string& host, int32_t port, 
 						 int32_t timeout, PxVisualDebuggerConnectionFlags connectionFlags )
 {
@@ -440,6 +565,7 @@ void Physx::onPvdConnected( PvdConnection& )
 void Physx::onPvdDisconnected( PvdConnection& )
 {
 }
+#endif
 
 PxErrorCallback& Physx::getErrorCallback()
 {

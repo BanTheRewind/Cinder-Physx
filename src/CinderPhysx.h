@@ -10,15 +10,30 @@
 #include <memory>
 #include <vector>
 
+physx::PxFilterFlags FilterShader(
+	physx::PxFilterObjectAttributes, physx::PxFilterData,
+	physx::PxFilterObjectAttributes, physx::PxFilterData,
+	physx::PxPairFlags&, const void*, physx::PxU32 );
+
 typedef std::shared_ptr<class Physx> PhysxRef;
 
-class Physx : public physx::debugger::comm::PvdConnectionHandler
+class Physx
+#if !defined( CINDER_COCOA_TOUCH )
+: public physx::debugger::comm::PvdConnectionHandler
+#endif
 {
 public:
+#if defined( CINDER_COCOA_TOUCH )
+	static PhysxRef									create();
+	static PhysxRef									create( const physx::PxTolerancesScale& scale );
+	static PhysxRef									create( const physx::PxTolerancesScale& scale,
+														   const physx::PxCookingParams& params );
+#else
 	static PhysxRef									create( bool connectToPvd = true );
 	static PhysxRef									create( const physx::PxTolerancesScale& scale, bool connectToPvd = true );
 	static PhysxRef									create( const physx::PxTolerancesScale& scale, 
 														   const physx::PxCookingParams& params, bool connectToPvd = true );
+#endif
 	~Physx();
 
 	static ci::mat3									from( const physx::PxMat33& m );
@@ -51,18 +66,22 @@ public:
 	physx::PxFoundation*							getFoundation() const;
 	physx::PxPhysics*								getPhysics() const;
 	physx::PxProfileZoneManager*					getProfileZoneManager() const;
+#if !defined( CINDER_COCOA_TOUCH )
 	physx::debugger::comm::PvdConnection*			getPvdConnection() const;
+#endif
 
 	void											update( float deltaInSeconds = 1.0f / 60.0f );
 
 	uint32_t										addActor( physx::PxActor* actor, uint32_t sceneId );
 	uint32_t										addActor( physx::PxActor* actor, physx::PxScene* scene );
+	void											clearActors();
 	void											eraseActor( uint32_t id );
 	void											eraseActor( physx::PxActor& actor );
 	void											eraseActor( physx::PxActor* actor );
 	physx::PxActor*									getActor( uint32_t id = 0 ) const;
 	const std::map<uint32_t, physx::PxActor*>&		getActors() const;
 
+	void											clearScenes();
 	uint32_t										createScene();
 	uint32_t										createScene( const physx::PxSceneDesc& desc );
 	void											eraseScene( uint32_t id );
@@ -70,17 +89,29 @@ public:
 	physx::PxScene*									getScene( uint32_t id = 0 ) const;
 	const std::map<uint32_t, physx::PxScene*>&		getScenes() const;
 
+#if !defined( CINDER_COCOA_TOUCH )
 	void											pvdConnect( const std::string& host = "127.0.0.1", int32_t port = 5425, 
 																int32_t timeout = 1000, 
 																physx::debugger::PxVisualDebuggerConnectionFlags connectionFlags = 
 																physx::debugger::PxVisualDebuggerExt::getAllConnectionFlags() );
 	void											pvdDisconnect();
+#endif
+	
+	physx::PxConvexMesh*							createConvexMesh( const std::vector<ci::vec3>& positions,
+																	 physx::PxConvexFlags flags = physx::PxConvexFlag::eCOMPUTE_CONVEX );
+	physx::PxTriangleMesh*							createTriangleMesh( const std::vector<ci::vec3>& positions,
+																	   size_t numTriangles = 0, 
+																	   std::vector<uint32_t> indices = std::vector<uint32_t>() );
 protected:
+#if defined( CINDER_COCOA_TOUCH )
+	Physx( const physx::PxTolerancesScale& scale, const physx::PxCookingParams& params );
+#else
 	Physx( const physx::PxTolerancesScale& scale, const physx::PxCookingParams& params, bool connectToPvd );
 
 	virtual void									onPvdSendClassDescriptions( physx::debugger::comm::PvdConnection& );
 	virtual void									onPvdConnected( physx::debugger::comm::PvdConnection& );
 	virtual void									onPvdDisconnected( physx::debugger::comm::PvdConnection& );
+#endif
 
 	physx::PxErrorCallback&							getErrorCallback();
 	std::map<uint32_t, physx::PxActor*>				mActors;
@@ -94,6 +125,8 @@ protected:
 	physx::PxFoundation*							mFoundation;
 	physx::PxPhysics*								mPhysics;
 	physx::PxProfileZoneManager*					mProfileZoneManager;
+#if !defined( CINDER_COCOA_TOUCH )
 	physx::debugger::comm::PvdConnection*			mPvdConnection;
+#endif
 	std::map<uint32_t, physx::PxScene*>				mScenes;
 };
