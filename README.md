@@ -3,7 +3,7 @@ Nvidia Physx SDK implementation for Cinder. Learn more about Physx here: https:/
 
 ![alt tag](http://bantherewind.com/uploads/physx.png)
 
-### SETUP (VISUAL STUDIO 2013)
+### SETUP
 
 ##### 1. Register as a Nvidia developer to get access to the Physx source by following the instructions here:
    https://developer.nvidia.com/physx-source-github
