@@ -3,7 +3,7 @@ Nvidia Physx SDK implementation for Cinder. Learn more about Physx here: https:/
 
 ![alt tag](http://bantherewind.com/uploads/physx.png)
 
-### SETUP
+### SETUP (VISUAL STUDIO 2013)
 
 ##### 1. Register as a Nvidia developer to get access to the Physx source by following the instructions here:
    https://developer.nvidia.com/physx-source-github
@@ -17,15 +17,34 @@ git clone https://github.com/BanTheRewind/Cinder-Physx.git
 cd Cinder-Physx
 git submodule update --init
 ```
+
+### BUILD (VISUAL STUDIO 2013)
+
 ##### 4. Build Physx with Visual Studio 2013 Community Edition or better.
   - Open "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/vc12win64/PhysX.sln"
   - Go to "BUILD" > "Batch Build..."
   - "Select All"
   - "Build"
 
-##### 6. Open and run a sample project.
+##### 5. Open and run a sample project.
 
-##### 7. (Optional) Download and install Physx Visual Debugger (PVD) from here:
+##### 6. (Optional) Download and install Physx Visual Debugger (PVD) from here:
    https://developer.nvidia.com/gameworksdownload#?search=pvd
    
    NOTE: Open and run PVD _before_ running a sample app.
+   
+### BUILD (XCODE)
+
+##### 4. (Required only on Xcode 7) The follow must be added to "Other C Flags" for each configuration on each target:
+```
+-Wno-reserved-id-macro
+-Wno-unused-local-typedefs
+```
+
+##### 5. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
+```
+xcodebuild -project PhysX.xcodeproj -alltargets -configuration checked
+xcodebuild -project PhysX.xcodeproj -alltargets -configuration debug
+xcodebuild -project PhysX.xcodeproj -alltargets -configuration profile
+xcodebuild -project PhysX.xcodeproj -alltargets -configuration release
+```
