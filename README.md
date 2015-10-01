@@ -49,4 +49,4 @@ xcodebuild -project PhysX.xcodeproj -alltargets -configuration profile
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration release
 ```
 
-##### 5. Repeat steps 4 and 5 for iOS from the "xcode_ios64" folder.
+##### 6. Repeat steps 4 and 5 for iOS from the "xcode_ios64" folder.
