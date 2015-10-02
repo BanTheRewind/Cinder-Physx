@@ -12,7 +12,12 @@ public:
 	InstancedApp();
 
 	void				draw() override;
+#if defined( CINDER_COCOA_TOUCH )
+	void				touchesBegan( ci::app::TouchEvent event ) override;
+	void				touchesEnded( ci::app::TouchEvent event ) override;
+#else
 	void				keyDown( ci::app::KeyEvent event ) override;
+#endif
 	void				resize() override;
 	void				update() override;
 private:
@@ -24,11 +29,14 @@ private:
 	ci::gl::BatchRef	mBatchStockColorPlane;
 	ci::gl::BatchRef	mBatchInstancedSphere;
 
-	void				createSphere();
+	void				addActor();
 	physx::PxMaterial*	mMaterial;
 	PhysxRef			mPhysx;
-	virtual void		onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor );
-	virtual void		onObjectOutOfBounds( physx::PxAggregate& aggregate );
+	virtual void		onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor ) override;
+	virtual void		onObjectOutOfBounds( physx::PxAggregate& aggregate ) override;
+#if defined( CINDER_COCOA_TOUCH )
+	bool				mTouching;
+#endif
 };
 
 using namespace ci;
@@ -42,6 +50,10 @@ using namespace std;
 
 InstancedApp::InstancedApp()
 {
+#if defined( CINDER_COCOA_TOUCH )
+	mTouching = false;
+#endif
+	
 	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 30.0f ), vec3( 0.0f, 0.0f, 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
@@ -67,8 +79,12 @@ InstancedApp::InstancedApp()
 		), mPhysx->getScene() );
 	
 	// Add some spheres
+#if defined( CINDER_COCOA_TOUCH )
+	for ( size_t i = 0; i < 500; ++i ) {
+#else
 	for ( size_t i = 0; i < 2000; ++i ) {
-		createSphere();
+#endif
+		addActor();
 	}
 
 	// Shortcut for shader loading and error handling
@@ -91,7 +107,11 @@ InstancedApp::InstancedApp()
 	DataSourceRef vert = loadAsset( "vert.glsl" );
 
 	// Create GLSL programs
+#if defined( CINDER_GL_ES_3 )
+	int32_t version = 300;
+#else
 	int32_t version = 330;
+#endif
 	gl::GlslProgRef glslProg			= loadGlslProg( gl::GlslProg::Format()
 													   .version( version )
 													   .vertex( vert ).fragment( frag ) );
@@ -126,8 +146,10 @@ InstancedApp::InstancedApp()
 	} );
 	mBatchStockColorPlane = gl::Batch::create( plane, glslProg );
 
+#if !defined( CINDER_COCOA_TOUCH )
 	// Connect to Physx Visual Debugger
 	mPhysx->pvdConnect();
+#endif
 
 	resize();
 
@@ -136,7 +158,7 @@ InstancedApp::InstancedApp()
 	gl::enableVerticalSync();
 }
 
-void InstancedApp::createSphere()
+void InstancedApp::addActor()
 {
 	// Choose random position and size
 	vec3 p( randVec3() * 5.0f );
@@ -175,6 +197,20 @@ void InstancedApp::draw()
 	mBatchInstancedSphere->drawInstanced( (GLsizei)mPhysx->getActors().size() - 1 );
 }
 
+#if defined( CINDER_COCOA_TOUCH )
+
+void InstancedApp::touchesBegan( TouchEvent event )
+{
+	mTouching = true;
+}
+
+void InstancedApp::touchesEnded( TouchEvent event )
+{
+	mTouching = false;
+}
+
+#else
+
 void InstancedApp::keyDown( ci::app::KeyEvent event )
 {
 	switch ( event.getCode() ) {
@@ -182,7 +218,7 @@ void InstancedApp::keyDown( ci::app::KeyEvent event )
 		{
 			int32_t count = randInt( 10 );
 			for ( size_t i = 0; i < count; ++i ) {
-				createSphere();
+				addActor();
 			}
 		}
 		break;
@@ -195,10 +231,12 @@ void InstancedApp::keyDown( ci::app::KeyEvent event )
 	}
 }
 
+#endif
+
 void InstancedApp::onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor )
 {
 	mPhysx->eraseActor( actor );
-	createSphere();
+	addActor();
 }
 
 void InstancedApp::onObjectOutOfBounds( PxAggregate& aggregate )
@@ -215,6 +253,12 @@ void InstancedApp::update()
 {
 	mPhysx->update();
 
+#if defined( CINDER_COCOA_TOUCH )
+	if ( mTouching ) {
+		addActor();
+	}
+#endif
+	
 	vector<Model> spheres;
 	for ( const auto& iter : mPhysx->getActors() ) {
 		if ( iter.second->getType() == PxActorType::eRIGID_DYNAMIC ) {
@@ -228,10 +272,14 @@ void InstancedApp::update()
 	mVboInstancedSpheres->bufferData( sizeof( Model ) * spheres.size(), spheres.data(), GL_DYNAMIC_DRAW );
 }
 
-CINDER_APP( InstancedApp, RendererGl( RendererGl::Options().msaa( 16 ).version( 3, 3 ) ),
+CINDER_APP( InstancedApp, RendererGl,
 			[]( App::Settings* settings )
 {
 	settings->disableFrameRate();
+#if defined( CINDER_COCOA_TOUCH )
+	settings->setMultiTouchEnabled( true );
+#else
 	settings->setWindowSize( 1280, 720 );
+#endif
 } )
  

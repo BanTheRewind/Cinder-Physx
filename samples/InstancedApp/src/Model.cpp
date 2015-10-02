@@ -7,6 +7,18 @@ Model::Model()
 {
 }
 
+Model::Model( const Model& rhs )
+{
+	*this = rhs;
+}
+
+Model& Model::operator=( const Model& rhs )
+{
+	mModelMatrix	= rhs.mModelMatrix;
+	mNormalMatrix	= rhs.mNormalMatrix;
+	return *this;
+}
+
 Model& Model::modelMatrix( const mat4& m )
 {
 	mModelMatrix = m;

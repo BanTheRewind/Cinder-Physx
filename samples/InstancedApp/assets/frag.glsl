@@ -1,3 +1,8 @@
+#if __VERSION__ == 300
+precision highp float;
+#endif
+
+
 const vec3 kLightPosition	= vec3( 0.0 );
 const float kShininess		= 100.0;
 const float kNormalization	= ( kShininess + 8.0 ) / ( 3.141592653589 * 8.0 );

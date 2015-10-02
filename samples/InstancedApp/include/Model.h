@@ -6,6 +6,9 @@ class Model
 {
 public:
 	Model();
+	Model( const Model& rhs );
+	
+	Model&			operator=( const Model& rhs );
 
 	Model&			modelMatrix( const ci::mat4& m );
 	Model&			normalMatrix( const ci::mat3& m );

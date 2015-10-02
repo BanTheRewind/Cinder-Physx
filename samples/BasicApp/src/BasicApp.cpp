@@ -11,7 +11,12 @@ public:
 	BasicApp();
 
 	void				draw() override;
+#if defined( CINDER_COCOA_TOUCH )
+	void				touchesBegan( ci::app::TouchEvent event ) override;
+	void				touchesEnded( ci::app::TouchEvent event ) override;
+#else
 	void				keyDown( ci::app::KeyEvent event ) override;
+#endif
 	void				resize() override;
 	void				update() override;
 private:
@@ -22,11 +27,16 @@ private:
 	ci::gl::BatchRef	mBatchStockColorCube;
 	ci::gl::BatchRef	mBatchStockColorPlane;
 	ci::gl::BatchRef	mBatchStockColorSphere;
-
+	
+	void				addActor();
 	physx::PxMaterial*	mMaterial;
 	PhysxRef			mPhysx;
-	virtual void		onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor );
-	virtual void		onObjectOutOfBounds( physx::PxAggregate& aggregate );
+	virtual void		onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor ) override;
+	virtual void		onObjectOutOfBounds( physx::PxAggregate& aggregate ) override;
+	
+#if defined( CINDER_COCOA_TOUCH )
+	bool				mTouching;
+#endif
 };
 
 using namespace ci;
@@ -40,6 +50,10 @@ using namespace std;
 
 BasicApp::BasicApp()
 {
+#if defined( CINDER_COCOA_TOUCH )
+	mTouching = false;
+#endif
+	
 	mCamera	= CameraPersp( getWindowWidth(), getWindowHeight(), 60.0f, 0.01f, 1000.0f );
 	mCamera.lookAt( vec3( 0.0f, 0.0f, 30.0f ), vec3( 0.0f, 0.0f, 0.0f ) );
 	mCamUi	= CameraUi( &mCamera, getWindow() );
@@ -88,15 +102,60 @@ BasicApp::BasicApp()
 	mBatchStockColorPlane		= gl::Batch::create( plane,		stockColor );
 	mBatchStockColorSphere		= gl::Batch::create( sphere,	stockColor );
 
+#if !defined( CINDER_COCOA_TOUCH )
 	// Connect to Physx Visual Debugger
 	mPhysx->pvdConnect();
+#endif
 
 	resize();
 
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::enableVerticalSync();
+#if !defined( CINDER_COCOA_TOUCH )
 	gl::polygonMode( GL_FRONT_AND_BACK, GL_LINE );
+#endif
+}
+
+void BasicApp::addActor()
+{
+	// Choose random position and size
+	vec3 p( randVec3() * 5.0f );
+	p.y		= glm::abs( p.y );
+	float r = randFloat( 0.01f, 1.0f );
+	
+	// Create a randomly shaped actor
+	PxRigidDynamic* actor = nullptr;
+	switch ( randInt( 0, 3 ) ) {
+		case 0:
+			actor = PxCreateDynamic(
+									*mPhysx->getPhysics(),
+									PxTransform( Physx::to( p ) ),
+									PxBoxGeometry( Physx::to( vec3( r ) ) ),
+									*mMaterial,
+									r * 100.0f );
+			break;
+		case 1:
+			actor = PxCreateDynamic(
+									*mPhysx->getPhysics(),
+									PxTransform( Physx::to( p ) ),
+									PxSphereGeometry( r ),
+									*mMaterial,
+									r * 100.0f );
+			break;
+		case 2:
+			actor = PxCreateDynamic(
+									*mPhysx->getPhysics(),
+									PxTransform( Physx::to( p ) ),
+									PxCapsuleGeometry( r, r * 0.5f ),
+									*mMaterial,
+									r * 100.0f );
+			break;
+	}
+	
+	// Apply some motion and add it to the scene
+	actor->setLinearVelocity( Physx::to( randVec3() ) );
+	mPhysx->addActor( actor, mPhysx->getScene() );
 }
 
 void BasicApp::draw()
@@ -140,55 +199,33 @@ void BasicApp::draw()
 				case PxGeometryType::eSPHERE:
 					mBatchStockColorSphere->draw();
 					break;
+				default:
+					break;
 				}
 			}
 		}
 	}
 }
 
+#if defined( CINDER_COCOA_TOUCH )
+
+void BasicApp::touchesBegan( TouchEvent event )
+{
+	mTouching = true;
+}
+
+void BasicApp::touchesEnded( TouchEvent event )
+{
+	mTouching = false;
+}
+
+#else
+
 void BasicApp::keyDown( ci::app::KeyEvent event )
 {
 	switch ( event.getCode() ) {
 	case KeyEvent::KEY_SPACE:
-		{
-			// Choose random position and size
-			vec3 p( randVec3() * 5.0f );
-			p.y		= glm::abs( p.y );
-			float r = randFloat( 0.01f, 1.0f );
-
-			// Create a randomly shaped actor
-			PxRigidDynamic* actor = nullptr;
-			switch ( randInt( 0, 3 ) ) {
-			case 0:
-				actor = PxCreateDynamic( 
-					*mPhysx->getPhysics(), 
-					PxTransform( Physx::to( p ) ), 
-					PxBoxGeometry( Physx::to( vec3( r ) ) ),
-					*mMaterial, 
-					r * 100.0f );
-				break;
-			case 1:
-				actor = PxCreateDynamic( 
-					*mPhysx->getPhysics(), 
-					PxTransform( Physx::to( p ) ), 
-					PxSphereGeometry( r ), 
-					*mMaterial, 
-					r * 100.0f );
-				break;
-			case 2:
-				actor = PxCreateDynamic( 
-					*mPhysx->getPhysics(), 
-					PxTransform( Physx::to( p ) ), 
-					PxCapsuleGeometry( r, r * 0.5f ), 
-					*mMaterial, 
-					r * 100.0f );
-				break;
-			}
-
-			// Apply some motion and add it to the scene
-			actor->setLinearVelocity( Physx::to( randVec3() ) );
-			mPhysx->addActor( actor, mPhysx->getScene() );
-		}
+		addActor();
 		break;
 	case KeyEvent::KEY_f:
 		setFullScreen( !isFullScreen() );
@@ -198,6 +235,8 @@ void BasicApp::keyDown( ci::app::KeyEvent event )
 		break;
 	}
 }
+
+#endif
 
 void BasicApp::onObjectOutOfBounds( physx::PxShape& shape, physx::PxActor& actor )
 {
@@ -217,12 +256,22 @@ void BasicApp::resize()
 void BasicApp::update()
 {
 	mPhysx->update();
+	
+#if defined( CINDER_COCOA_TOUCH )
+	if ( mTouching ) {
+		addActor();
+	}
+#endif
 }
 
 CINDER_APP( BasicApp, RendererGl( RendererGl::Options().msaa( 16 ) ), 
 			[]( App::Settings* settings )
 {
 	settings->disableFrameRate();
+#if defined( CINDER_COCOA_TOUCH )
+	settings->setMultiTouchEnabled( true );
+#else
 	settings->setWindowSize( 1280, 720 );
+#endif
 } )
  
