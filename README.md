@@ -35,9 +35,9 @@ git submodule update --init
    
 ### BUILD (XCODE)
 
-##### 4. (Required only on Xcode 7) Change `abs` to `fabs` at "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevel/Software Source/PxsSolverConstraintExtPF:209".
+##### 4. Change `abs` to `fabs` at "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevel/Software Source/PxsSolverConstraintExtPF:209".
 
-##### 5. (Required for iOS) Make the following changes to "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevelCloth/src/neon/SwCollisionHelpers.h"
+##### 5. Make the following changes to "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevelCloth/src/neon/SwCollisionHelpers.h"
 ```
 SwCollisionHelpers.h:56
 “uint8x16_t” to “uint8x8_t” (two instances)
@@ -58,7 +58,7 @@ SwCollisionHelpers.h:78
 “vtbl2q_u8” to “vtbl2_u8”
 ```
 
-##### 6. (Required only on Xcode 7) The follow must be added to "Other C Flags" for each configuration on each target:
+##### 6. The following must be added to "Other C Flags" for each configuration on each target:
 ```
 -Wno-reserved-id-macro
 -Wno-unused-local-typedefs
