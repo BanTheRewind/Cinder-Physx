@@ -37,13 +37,34 @@ git submodule update --init
 
 ##### 4. (Required only on Xcode 7) Change `abs` to `fabs` at "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevel/Software Source/PxsSolverConstraintExtPF:209".
 
-##### 5. (Required only on Xcode 7) The follow must be added to "Other C Flags" for each configuration on each target:
+##### 5. (Required for iOS) Make the following changes to "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevelCloth/src/neon/SwCollisionHelpers.h"
+```
+SwCollisionHelpers.h:56
+“uint8x16_t” to “uint8x8_t” (two instances)
+
+SwCollisionHelpers.h:57
+“vtbl1q_u8” to “vtbl1_u8”
+
+SwCollisionHelpers.h:58
+“vtbl1q_u8” to “vtbl1_u8”
+
+SwCollisionHelpers.h:76
+“uint8x16x2_t” to “uint8x8x2_t” (two instances)
+
+SwCollisionHelpers.h:77
+“vtbl2q_u8” to “vtbl2_u8”
+
+SwCollisionHelpers.h:78
+“vtbl2q_u8” to “vtbl2_u8”
+```
+
+##### 6. (Required only on Xcode 7) The follow must be added to "Other C Flags" for each configuration on each target:
 ```
 -Wno-reserved-id-macro
 -Wno-unused-local-typedefs
 ```
 
-##### 6. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
+##### 7. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
 ```
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration checked
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration debug
@@ -51,4 +72,4 @@ xcodebuild -project PhysX.xcodeproj -alltargets -configuration profile
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration release
 ```
 
-##### 7. Repeat steps 5 and 6 for iOS from the "xcode_ios64" folder.
+##### 7. Repeat steps 6 and 7 for iOS from the "xcode_ios64" folder.
