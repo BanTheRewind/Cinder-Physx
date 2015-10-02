@@ -41,7 +41,7 @@ git submodule update --init
 -Wno-unused-local-typedefs
 ```
 
-##### 5. (Required only on Xcode 7) Change `std::abs` to `std::fabs` where floats are used (follow the red dots in Xcode).
+##### 5. (Required only on Xcode 7) Change `abs` to `fabs` at "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevel/Software Source/PxsSolverConstraintExtPF:209".
 
 ##### 6. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
 ```
