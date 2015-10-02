@@ -72,4 +72,4 @@ xcodebuild -project PhysX.xcodeproj -alltargets -configuration profile
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration release
 ```
 
-##### 7. Repeat steps 6 and 7 for iOS from the "xcode_ios64" folder.
+##### 8. Repeat steps 6 and 7 for iOS from the "xcode_ios64" folder (first change "Targeted Device Family" to match your device(s)).
