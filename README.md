@@ -35,13 +35,13 @@ git submodule update --init
    
 ### BUILD (XCODE)
 
-##### 4. (Required only on Xcode 7) The follow must be added to "Other C Flags" for each configuration on each target:
+##### 4. (Required only on Xcode 7) Change `abs` to `fabs` at "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevel/Software Source/PxsSolverConstraintExtPF:209".
+
+##### 5. (Required only on Xcode 7) The follow must be added to "Other C Flags" for each configuration on each target:
 ```
 -Wno-reserved-id-macro
 -Wno-unused-local-typedefs
 ```
-
-##### 5. (Required only on Xcode 7) Change `abs` to `fabs` at "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/LowLevel/Software Source/PxsSolverConstraintExtPF:209".
 
 ##### 6. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
 ```
@@ -51,4 +51,4 @@ xcodebuild -project PhysX.xcodeproj -alltargets -configuration profile
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration release
 ```
 
-##### 7. Repeat steps 4 and 5 for iOS from the "xcode_ios64" folder.
+##### 7. Repeat steps 5 and 6 for iOS from the "xcode_ios64" folder.
