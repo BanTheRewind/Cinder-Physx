@@ -41,7 +41,9 @@ git submodule update --init
 -Wno-unused-local-typedefs
 ```
 
-##### 5. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
+##### 5. (Required only on Xcode 7) Change `std::abs` to `std::fabs` where floats are used (follow the red dots in Xcode).
+
+##### 6. Use the command line tool to build each configuration from "Cinder-Physx/PhysX-3.3/PhysXSDK/Source/compiler/xcode_osx64/"
 ```
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration checked
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration debug
@@ -49,4 +51,4 @@ xcodebuild -project PhysX.xcodeproj -alltargets -configuration profile
 xcodebuild -project PhysX.xcodeproj -alltargets -configuration release
 ```
 
-##### 6. Repeat steps 4 and 5 for iOS from the "xcode_ios64" folder (Add "armv7s" as an architecture in the Xcode project for iPhone 5).
+##### 7. Repeat steps 4 and 5 for iOS from the "xcode_ios64" folder (Add "armv7s" as an architecture in the Xcode project for iPhone 5).
