@@ -75,12 +75,12 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT;LIBCPMT</IgnoreSpecificDefaultLibraries>
     </Link>
     <PreBuildEvent>
-      <Command>xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\nvToolsExt64_1.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3DEBUG_x64.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3CookingDEBUG_x64.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3CommonDEBUG_x64.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysXDevice64.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3GpuDEBUG_x64.dll" "$(ProjectDir)bin\" /Y /C</Command>
+      <Command>xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\nvToolsExt64_1.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3DEBUG_x64.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3CookingDEBUG_x64.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3CommonDEBUG_x64.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysXDevice64.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3GpuDEBUG_x64.dll" "$(SolutionDir)bin\" /Y /C</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -111,14 +111,14 @@ xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3GpuDEBUG_x64.dll" "$(Proj
       <DataExecutionPrevention />
     </Link>
     <PreBuildEvent>
-      <Command>xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\nvToolsExt64_1.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3_x64.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3Cooking_x64.dll" "$(ProjectDir)bin\" /Y /C
+      <Command>xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\nvToolsExt64_1.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3_x64.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3Cooking_x64.dll" "$(SolutionDir)bin\" /Y /C
 
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3Common_x64.dll" "$(ProjectDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3Common_x64.dll" "$(SolutionDir)bin\" /Y /C
 
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysXDevice64.dll" "$(ProjectDir)bin\" /Y /C
-xcopy "..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3Gpu_x64.dll" "$(ProjectDir)bin\" /Y /C</Command>
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysXDevice64.dll" "$(SolutionDir)bin\" /Y /C
+xcopy "$(SolutionDir)..\..\..\PhysX-3.3\PhysXSDK\Bin\vc12win64\PhysX3Gpu_x64.dll" "$(SolutionDir)bin\" /Y /C</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

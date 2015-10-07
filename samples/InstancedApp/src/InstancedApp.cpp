@@ -272,14 +272,20 @@ void InstancedApp::update()
 	mVboInstancedSpheres->bufferData( sizeof( Model ) * spheres.size(), spheres.data(), GL_DYNAMIC_DRAW );
 }
 
-CINDER_APP( InstancedApp, RendererGl,
-			[]( App::Settings* settings )
+
+#if defined( CINDER_COCOA_TOUCH )
+CINDER_APP( InstancedApp, RendererGl( RendererGl::Options().msaa( 16 ) ),
+	[]( App::Settings* settings )
 {
 	settings->disableFrameRate();
-#if defined( CINDER_COCOA_TOUCH )
 	settings->setMultiTouchEnabled( true );
-#else
-	settings->setWindowSize( 1280, 720 );
-#endif
 } )
+#else
+CINDER_APP( InstancedApp, RendererGl( RendererGl::Options().msaa( 16 ) ),
+	[]( App::Settings* settings )
+{
+	settings->disableFrameRate();
+	settings->setWindowSize( 1280, 720 );
+} )
+#endif
  
